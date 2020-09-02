@@ -50,6 +50,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  * 集合相关工具类
@@ -411,6 +412,26 @@ public class CollUtil {
 	}
 
 	/**
+	 * 自定义函数判断集合是否包含某类值
+	 *
+	 * @param collection 集合
+	 * @param containFunc 自定义判断函数
+	 * @param <T> 值类型
+	 * @return 是否包含自定义规则的值
+	 */
+	public static <T> boolean contains(Collection<T> collection, Predicate<? super T> containFunc) {
+		if (isEmpty(collection)) {
+			return false;
+		}
+		for (T t : collection) {
+			if (containFunc.test(t)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
 	 * 其中一个集合在另一个集合中是否至少包含一个元素，即是两个集合是否至少有一个共同的元素
 	 *
 	 * @param coll1 集合1
@@ -546,7 +567,7 @@ public class CollUtil {
 	 */
 	public static <T> List<T> popPart(Stack<T> surplusAlaDatas, int partSize) {
 		if (isEmpty(surplusAlaDatas)) {
-			return null;
+			return ListUtil.empty();
 		}
 
 		final List<T> currentAlaDatas = new ArrayList<>();
@@ -575,7 +596,7 @@ public class CollUtil {
 	 */
 	public static <T> List<T> popPart(Deque<T> surplusAlaDatas, int partSize) {
 		if (isEmpty(surplusAlaDatas)) {
-			return null;
+			return ListUtil.empty();
 		}
 
 		final List<T> currentAlaDatas = new ArrayList<>();
@@ -1080,7 +1101,7 @@ public class CollUtil {
 	 */
 	public static <T> List<T> sub(Collection<T> list, int start, int end, int step) {
 		if (list == null || list.isEmpty()) {
-			return null;
+			return ListUtil.empty();
 		}
 
 		return sub(new ArrayList<>(list), start, end, step);
@@ -1747,7 +1768,7 @@ public class CollUtil {
 	 */
 	public static <K, V> Map<K, V> zip(Collection<K> keys, Collection<V> values) {
 		if (isEmpty(keys) || isEmpty(values)) {
-			return null;
+			return MapUtil.empty();
 		}
 
 		int entryCount = Math.min(keys.size(), values.size());
@@ -2824,6 +2845,7 @@ public class CollUtil {
 	 * @param <T> 处理参数类型
 	 * @author Looly
 	 */
+	@FunctionalInterface
 	public interface Consumer<T> {
 		/**
 		 * 接受并处理一个参数
@@ -2841,6 +2863,7 @@ public class CollUtil {
 	 * @param <V> VALUE类型
 	 * @author Looly
 	 */
+	@FunctionalInterface
 	public interface KVConsumer<K, V> {
 		/**
 		 * 接受并处理一对参数

@@ -293,6 +293,17 @@ public class LocalDateTimeUtil {
 	}
 
 	/**
+	 * 格式化日期时间为yyyy-MM-dd HH:mm:ss格式
+	 *
+	 * @param time      {@link LocalDateTime}
+	 * @return 格式化后的字符串
+	 * @since 5.3.11
+	 */
+	public static String formatNormal(LocalDateTime time) {
+		return format(time, DatePattern.NORM_DATETIME_FORMATTER);
+	}
+
+	/**
 	 * 格式化日期时间为指定格式
 	 *
 	 * @param time      {@link LocalDateTime}
@@ -315,6 +326,17 @@ public class LocalDateTimeUtil {
 			return null;
 		}
 		return format(time, DateTimeFormatter.ofPattern(format));
+	}
+
+	/**
+	 * 格式化日期时间为yyyy-MM-dd格式
+	 *
+	 * @param date      {@link LocalDate}
+	 * @return 格式化后的字符串
+	 * @since 5.3.11
+	 */
+	public static String formatNormal(LocalDate date) {
+		return format(date, DatePattern.NORM_DATE_FORMATTER);
 	}
 
 	/**
@@ -392,5 +414,17 @@ public class LocalDateTimeUtil {
 	 */
 	public static LocalDateTime endOfDay(LocalDateTime time) {
 		return time.with(LocalTime.of(23, 59, 59, 999_999_999));
+	}
+
+	/**
+	 * {@link TemporalAccessor}转换为 时间戳（从1970-01-01T00:00:00Z开始的毫秒数）
+	 *
+	 * @param temporalAccessor Date对象
+	 * @return {@link Instant}对象
+	 * @since 5.4.1
+	 * @see TemporalAccessorUtil#toEpochMilli(TemporalAccessor)
+	 */
+	public static long toEpochMilli(TemporalAccessor temporalAccessor) {
+		return TemporalAccessorUtil.toEpochMilli(temporalAccessor);
 	}
 }

@@ -7,35 +7,30 @@ import cn.hutool.core.comparator.CompareUtil;
 import cn.hutool.core.exceptions.UtilException;
 import cn.hutool.core.lang.Editor;
 import cn.hutool.core.lang.Filter;
+import cn.hutool.core.lang.Matcher;
 
 import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * 数组工具类
- * 
- * @author Looly
  *
+ * @author Looly
  */
 public class ArrayUtil {
 
-	/** 数组中元素未找到的下标，值为-1 */
+	/**
+	 * 数组中元素未找到的下标，值为-1
+	 */
 	public static final int INDEX_NOT_FOUND = -1;
 
 	// ---------------------------------------------------------------------- isEmpty
+
 	/**
 	 * 数组是否为空
-	 * 
-	 * @param <T> 数组元素类型
+	 *
+	 * @param <T>   数组元素类型
 	 * @param array 数组
 	 * @return 是否为空
 	 */
@@ -46,13 +41,13 @@ public class ArrayUtil {
 	/**
 	 * 如果给定数组为空，返回默认数组
 	 *
-	 * @param <T> 数组元素类型
-	 * @param array 数组
+	 * @param <T>          数组元素类型
+	 * @param array        数组
 	 * @param defaultArray 默认数组
 	 * @return 非空（empty）的原数组或默认数组
 	 * @since 4.6.9
 	 */
-	public static <T> T[] defaultIfEmpty(T[] array, T[] defaultArray){
+	public static <T> T[] defaultIfEmpty(T[] array, T[] defaultArray) {
 		return isEmpty(array) ? defaultArray : array;
 	}
 
@@ -61,7 +56,7 @@ public class ArrayUtil {
 	 * 此方法会匹配单一对象，如果此对象为{@code null}则返回true<br>
 	 * 如果此对象为非数组，理解为此对象为数组的第一个元素，则返回false<br>
 	 * 如果此对象为数组对象，数组长度大于0情况下返回false，否则返回true
-	 * 
+	 *
 	 * @param array 数组
 	 * @return 是否为空
 	 */
@@ -72,12 +67,12 @@ public class ArrayUtil {
 			}
 			return false;
 		}
-		return true;		
+		return true;
 	}
 
 	/**
 	 * 数组是否为空
-	 * 
+	 *
 	 * @param array 数组
 	 * @return 是否为空
 	 */
@@ -87,7 +82,7 @@ public class ArrayUtil {
 
 	/**
 	 * 数组是否为空
-	 * 
+	 *
 	 * @param array 数组
 	 * @return 是否为空
 	 */
@@ -97,7 +92,7 @@ public class ArrayUtil {
 
 	/**
 	 * 数组是否为空
-	 * 
+	 *
 	 * @param array 数组
 	 * @return 是否为空
 	 */
@@ -107,7 +102,7 @@ public class ArrayUtil {
 
 	/**
 	 * 数组是否为空
-	 * 
+	 *
 	 * @param array 数组
 	 * @return 是否为空
 	 */
@@ -117,7 +112,7 @@ public class ArrayUtil {
 
 	/**
 	 * 数组是否为空
-	 * 
+	 *
 	 * @param array 数组
 	 * @return 是否为空
 	 */
@@ -127,7 +122,7 @@ public class ArrayUtil {
 
 	/**
 	 * 数组是否为空
-	 * 
+	 *
 	 * @param array 数组
 	 * @return 是否为空
 	 */
@@ -137,7 +132,7 @@ public class ArrayUtil {
 
 	/**
 	 * 数组是否为空
-	 * 
+	 *
 	 * @param array 数组
 	 * @return 是否为空
 	 */
@@ -147,7 +142,7 @@ public class ArrayUtil {
 
 	/**
 	 * 数组是否为空
-	 * 
+	 *
 	 * @param array 数组
 	 * @return 是否为空
 	 */
@@ -156,14 +151,15 @@ public class ArrayUtil {
 	}
 
 	// ---------------------------------------------------------------------- isNotEmpty
+
 	/**
 	 * 数组是否为非空
-	 * 
-	 * @param <T> 数组元素类型
+	 *
+	 * @param <T>   数组元素类型
 	 * @param array 数组
 	 * @return 是否为非空
 	 */
-	public static <T> boolean isNotEmpty( T[] array) {
+	public static <T> boolean isNotEmpty(T[] array) {
 		return (array != null && array.length != 0);
 	}
 
@@ -172,7 +168,7 @@ public class ArrayUtil {
 	 * 此方法会匹配单一对象，如果此对象为{@code null}则返回false<br>
 	 * 如果此对象为非数组，理解为此对象为数组的第一个元素，则返回true<br>
 	 * 如果此对象为数组对象，数组长度大于0情况下返回true，否则返回false
-	 * 
+	 *
 	 * @param array 数组
 	 * @return 是否为非空
 	 */
@@ -182,7 +178,7 @@ public class ArrayUtil {
 
 	/**
 	 * 数组是否为非空
-	 * 
+	 *
 	 * @param array 数组
 	 * @return 是否为非空
 	 */
@@ -192,7 +188,7 @@ public class ArrayUtil {
 
 	/**
 	 * 数组是否为非空
-	 * 
+	 *
 	 * @param array 数组
 	 * @return 是否为非空
 	 */
@@ -202,7 +198,7 @@ public class ArrayUtil {
 
 	/**
 	 * 数组是否为非空
-	 * 
+	 *
 	 * @param array 数组
 	 * @return 是否为非空
 	 */
@@ -212,7 +208,7 @@ public class ArrayUtil {
 
 	/**
 	 * 数组是否为非空
-	 * 
+	 *
 	 * @param array 数组
 	 * @return 是否为非空
 	 */
@@ -222,7 +218,7 @@ public class ArrayUtil {
 
 	/**
 	 * 数组是否为非空
-	 * 
+	 *
 	 * @param array 数组
 	 * @return 是否为非空
 	 */
@@ -232,7 +228,7 @@ public class ArrayUtil {
 
 	/**
 	 * 数组是否为非空
-	 * 
+	 *
 	 * @param array 数组
 	 * @return 是否为非空
 	 */
@@ -242,7 +238,7 @@ public class ArrayUtil {
 
 	/**
 	 * 数组是否为非空
-	 * 
+	 *
 	 * @param array 数组
 	 * @return 是否为非空
 	 */
@@ -252,7 +248,7 @@ public class ArrayUtil {
 
 	/**
 	 * 数组是否为非空
-	 * 
+	 *
 	 * @param array 数组
 	 * @return 是否为非空
 	 */
@@ -262,8 +258,8 @@ public class ArrayUtil {
 
 	/**
 	 * 是否包含{@code null}元素
-	 * 
-	 * @param <T> 数组元素类型
+	 *
+	 * @param <T>   数组元素类型
 	 * @param array 被检查的数组
 	 * @return 是否包含{@code null}元素
 	 * @since 3.0.7
@@ -281,18 +277,46 @@ public class ArrayUtil {
 	}
 
 	/**
+	 * 多个字段是否全为null
+	 *
+	 * @param <T>   数组元素类型
+	 * @param array 被检查的数组
+	 * @return 多个字段是否全为null
+	 * @author dahuoyzs
+	 * @since 5.4.0
+	 */
+	@SuppressWarnings("unchecked")
+	public static <T> boolean isAllNull(T... array) {
+		return null == firstNonNull(array);
+	}
+
+	/**
 	 * 返回数组中第一个非空元素
-	 * 
-	 * @param <T> 数组元素类型
+	 *
+	 * @param <T>   数组元素类型
 	 * @param array 数组
 	 * @return 非空元素，如果不存在非空元素或数组为空，返回{@code null}
 	 * @since 3.0.7
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T> T firstNonNull(T... array) {
+		return firstMatch(Objects::nonNull, array);
+	}
+
+	/**
+	 * 返回数组中第一个匹配规则的值
+	 *
+	 * @param <T>   数组元素类型
+	 * @param matcher 匹配接口，实现此接口自定义匹配规则
+	 * @param array 数组
+	 * @return 非空元素，如果不存在非空元素或数组为空，返回{@code null}
+	 * @since 3.0.7
+	 */
+	@SuppressWarnings("unchecked")
+	public static <T> T firstMatch(Matcher<T> matcher, T... array) {
 		if (isNotEmpty(array)) {
 			for (final T val : array) {
-				if (null != val) {
+				if(matcher.match(val)){
 					return val;
 				}
 			}
@@ -302,10 +326,10 @@ public class ArrayUtil {
 
 	/**
 	 * 新建一个空数组
-	 * 
-	 * @param <T> 数组元素类型
+	 *
+	 * @param <T>           数组元素类型
 	 * @param componentType 元素类型
-	 * @param newSize 大小
+	 * @param newSize       大小
 	 * @return 空数组
 	 */
 	@SuppressWarnings("unchecked")
@@ -315,7 +339,7 @@ public class ArrayUtil {
 
 	/**
 	 * 新建一个空数组
-	 * 
+	 *
 	 * @param newSize 大小
 	 * @return 空数组
 	 * @since 3.3.0
@@ -326,7 +350,7 @@ public class ArrayUtil {
 
 	/**
 	 * 获取数组对象的元素类型
-	 * 
+	 *
 	 * @param array 数组对象
 	 * @return 元素类型
 	 * @since 3.2.2
@@ -337,7 +361,7 @@ public class ArrayUtil {
 
 	/**
 	 * 获取数组对象的元素类型
-	 * 
+	 *
 	 * @param arrayClass 数组类
 	 * @return 元素类型
 	 * @since 3.2.2
@@ -349,7 +373,7 @@ public class ArrayUtil {
 	/**
 	 * 根据数组元素类型，获取数组的类型<br>
 	 * 方法是通过创建一个空数组从而获取其类型
-	 * 
+	 *
 	 * @param componentType 数组元素类型
 	 * @return 数组类型
 	 * @since 3.2.2
@@ -362,11 +386,11 @@ public class ArrayUtil {
 	 * 强转数组类型<br>
 	 * 强制转换的前提是数组元素类型可被强制转换<br>
 	 * 强制转换后会生成一个新数组
-	 * 
-	 * @param type 数组类型或数组元素类型
+	 *
+	 * @param type     数组类型或数组元素类型
 	 * @param arrayObj 原数组
 	 * @return 转换后的数组类型
-	 * @throws NullPointerException 提供参数为空
+	 * @throws NullPointerException     提供参数为空
 	 * @throws IllegalArgumentException 参数arrayObj不是数组
 	 * @since 3.0.6
 	 */
@@ -387,63 +411,63 @@ public class ArrayUtil {
 		System.arraycopy(array, 0, result, 0, array.length);
 		return result;
 	}
-	
+
 	/**
 	 * 将新元素添加到已有数组中<br>
 	 * 添加新元素会生成一个新的数组，不影响原数组
-	 * 
-	 * @param <T> 数组元素类型
-	 * @param buffer 已有数组
+	 *
+	 * @param <T>         数组元素类型
+	 * @param buffer      已有数组
 	 * @param newElements 新元素
 	 * @return 新数组
 	 */
 	@SafeVarargs
 	public static <T> T[] append(T[] buffer, T... newElements) {
-		if(isEmpty(buffer)) {
+		if (isEmpty(buffer)) {
 			return newElements;
 		}
 		return insert(buffer, buffer.length, newElements);
 	}
-	
+
 	/**
 	 * 将新元素添加到已有数组中<br>
 	 * 添加新元素会生成一个新的数组，不影响原数组
-	 * 
-	 * @param <T> 数组元素类型
-	 * @param array 已有数组
+	 *
+	 * @param <T>         数组元素类型
+	 * @param array       已有数组
 	 * @param newElements 新元素
 	 * @return 新数组
 	 */
 	@SafeVarargs
 	public static <T> Object append(Object array, T... newElements) {
-		if(isEmpty(array)) {
+		if (isEmpty(array)) {
 			return newElements;
 		}
 		return insert(array, length(array), newElements);
 	}
-	
+
 	/**
 	 * 将元素值设置为数组的某个位置，当给定的index大于数组长度，则追加
-	 * 
-	 * @param <T> 数组元素类型
+	 *
+	 * @param <T>    数组元素类型
 	 * @param buffer 已有数组
-	 * @param index 位置，大于长度追加，否则替换
-	 * @param value 新值
+	 * @param index  位置，大于长度追加，否则替换
+	 * @param value  新值
 	 * @return 新数组或原有数组
 	 * @since 4.1.2
 	 */
 	public static <T> T[] setOrAppend(T[] buffer, int index, T value) {
-		if(index < buffer.length) {
+		if (index < buffer.length) {
 			Array.set(buffer, index, value);
 			return buffer;
-		}else {
+		} else {
 			return append(buffer, value);
 		}
 	}
-	
+
 	/**
 	 * 将元素值设置为数组的某个位置，当给定的index大于数组长度，则追加
-	 * 
+	 *
 	 * @param array 已有数组
 	 * @param index 位置，大于长度追加，否则替换
 	 * @param value 新值
@@ -451,10 +475,10 @@ public class ArrayUtil {
 	 * @since 4.1.2
 	 */
 	public static Object setOrAppend(Object array, int index, Object value) {
-		if(index < length(array)) {
+		if (index < length(array)) {
 			Array.set(array, index, value);
 			return array;
-		}else {
+		} else {
 			return append(array, value);
 		}
 	}
@@ -463,27 +487,27 @@ public class ArrayUtil {
 	 * 将新元素插入到到已有数组中的某个位置<br>
 	 * 添加新元素会生成一个新的数组，不影响原数组<br>
 	 * 如果插入位置为为负数，从原数组从后向前计数，若大于原数组长度，则空白处用null填充
-	 * 
-	 * @param <T> 数组元素类型
-	 * @param buffer 已有数组
-	 * @param index 插入位置，此位置为对应此位置元素之前的空档
+	 *
+	 * @param <T>         数组元素类型
+	 * @param buffer      已有数组
+	 * @param index       插入位置，此位置为对应此位置元素之前的空档
 	 * @param newElements 新元素
 	 * @return 新数组
 	 * @since 4.0.8
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T> T[] insert(T[] buffer, int index, T... newElements) {
-		return (T[]) insert((Object)buffer, index, newElements);
+		return (T[]) insert((Object) buffer, index, newElements);
 	}
-	
+
 	/**
 	 * 将新元素插入到到已有数组中的某个位置<br>
 	 * 添加新元素会生成一个新的数组，不影响原数组<br>
 	 * 如果插入位置为为负数，从原数组从后向前计数，若大于原数组长度，则空白处用null填充
-	 * 
-	 * @param <T> 数组元素类型
-	 * @param array 已有数组
-	 * @param index 插入位置，此位置为对应此位置元素之前的空档
+	 *
+	 * @param <T>         数组元素类型
+	 * @param array       已有数组
+	 * @param index       插入位置，此位置为对应此位置元素之前的空档
 	 * @param newElements 新元素
 	 * @return 新数组
 	 * @since 4.0.8
@@ -493,15 +517,15 @@ public class ArrayUtil {
 		if (isEmpty(newElements)) {
 			return array;
 		}
-		if(isEmpty(array)) {
+		if (isEmpty(array)) {
 			return newElements;
 		}
-		
+
 		final int len = length(array);
 		if (index < 0) {
 			index = (index % len) + len;
 		}
-		
+
 		final T[] result = newArray(array.getClass().getComponentType(), Math.max(len, index) + newElements.length);
 		System.arraycopy(array, 0, result, 0, Math.min(len, index));
 		System.arraycopy(newElements, 0, result, index, newElements.length);
@@ -514,15 +538,15 @@ public class ArrayUtil {
 	/**
 	 * 生成一个新的重新设置大小的数组<br>
 	 * 调整大小后拷贝原数组到新数组下。扩大则占位前N个位置，缩小则截断
-	 * 
-	 * @param <T> 数组元素类型
-	 * @param data 原数组
-	 * @param newSize 新的数组大小
+	 *
+	 * @param <T>           数组元素类型
+	 * @param data          原数组
+	 * @param newSize       新的数组大小
 	 * @param componentType 数组元素类型
 	 * @return 调整后的新数组
 	 */
 	public static <T> T[] resize(T[] data, int newSize, Class<?> componentType) {
-		if(newSize < 0){
+		if (newSize < 0) {
 			return data;
 		}
 
@@ -537,13 +561,13 @@ public class ArrayUtil {
 	 * 生成一个新的重新设置大小的数组<br>
 	 * 调整大小后拷贝原数组到新数组下。扩大则占位前N个位置，其它位置补充0，缩小则截断
 	 *
-	 * @param array 原数组
+	 * @param array   原数组
 	 * @param newSize 新的数组大小
 	 * @return 调整后的新数组
 	 * @since 4.6.7
 	 */
 	public static Object resize(Object array, int newSize) {
-		if(newSize < 0){
+		if (newSize < 0) {
 			return array;
 		}
 		if (null == array) {
@@ -562,13 +586,13 @@ public class ArrayUtil {
 	 * 生成一个新的重新设置大小的数组<br>
 	 * 调整大小后拷贝原数组到新数组下。扩大则占位前N个位置，其它位置补充0，缩小则截断
 	 *
-	 * @param bytes 原数组
+	 * @param bytes   原数组
 	 * @param newSize 新的数组大小
 	 * @return 调整后的新数组
 	 * @since 4.6.7
 	 */
 	public static byte[] resize(byte[] bytes, int newSize) {
-		if(newSize < 0){
+		if (newSize < 0) {
 			return bytes;
 		}
 		final byte[] newArray = new byte[newSize];
@@ -581,9 +605,9 @@ public class ArrayUtil {
 	/**
 	 * 生成一个新的重新设置大小的数组<br>
 	 * 新数组的类型为原数组的类型，调整大小后拷贝原数组到新数组下。扩大则占位前N个位置，缩小则截断
-	 * 
-	 * @param <T> 数组元素类型
-	 * @param buffer 原数组
+	 *
+	 * @param <T>     数组元素类型
+	 * @param buffer  原数组
 	 * @param newSize 新的数组大小
 	 * @return 调整后的新数组
 	 */
@@ -594,8 +618,8 @@ public class ArrayUtil {
 	/**
 	 * 将多个数组合并在一起<br>
 	 * 忽略null的数组
-	 * 
-	 * @param <T> 数组元素类型
+	 *
+	 * @param <T>    数组元素类型
 	 * @param arrays 数组集合
 	 * @return 合并后的数组
 	 */
@@ -882,12 +906,12 @@ public class ArrayUtil {
 	/**
 	 * 包装 {@link System#arraycopy(Object, int, Object, int, int)}<br>
 	 * 数组复制
-	 * 
-	 * @param src 源数组
-	 * @param srcPos 源数组开始位置
-	 * @param dest 目标数组
+	 *
+	 * @param src     源数组
+	 * @param srcPos  源数组开始位置
+	 * @param dest    目标数组
 	 * @param destPos 目标数组开始位置
-	 * @param length 拷贝数组长度
+	 * @param length  拷贝数组长度
 	 * @return 目标数组
 	 * @since 3.0.6
 	 */
@@ -900,9 +924,9 @@ public class ArrayUtil {
 	/**
 	 * 包装 {@link System#arraycopy(Object, int, Object, int, int)}<br>
 	 * 数组复制，缘数组和目标数组都是从位置0开始复制
-	 * 
-	 * @param src 源数组
-	 * @param dest 目标数组
+	 *
+	 * @param src    源数组
+	 * @param dest   目标数组
 	 * @param length 拷贝数组长度
 	 * @return 目标数组
 	 * @since 3.0.6
@@ -915,8 +939,8 @@ public class ArrayUtil {
 
 	/**
 	 * 克隆数组
-	 * 
-	 * @param <T> 数组元素类型
+	 *
+	 * @param <T>   数组元素类型
 	 * @param array 被克隆的数组
 	 * @return 新数组
 	 */
@@ -929,7 +953,7 @@ public class ArrayUtil {
 
 	/**
 	 * 克隆数组，如果非数组返回<code>null</code>
-	 * 
+	 *
 	 * @param <T> 数组元素类型
 	 * @param obj 数组对象
 	 * @return 克隆后的数组对象
@@ -958,7 +982,7 @@ public class ArrayUtil {
 
 	/**
 	 * 生成一个从0开始的数字列表<br>
-	 * 
+	 *
 	 * @param excludedEnd 结束的数字（不包含）
 	 * @return 数字列表
 	 */
@@ -969,9 +993,9 @@ public class ArrayUtil {
 	/**
 	 * 生成一个数字列表<br>
 	 * 自动判定正序反序
-	 * 
+	 *
 	 * @param includedStart 开始的数字（包含）
-	 * @param excludedEnd 结束的数字（不包含）
+	 * @param excludedEnd   结束的数字（不包含）
 	 * @return 数字列表
 	 */
 	public static int[] range(int includedStart, int excludedEnd) {
@@ -981,10 +1005,10 @@ public class ArrayUtil {
 	/**
 	 * 生成一个数字列表<br>
 	 * 自动判定正序反序
-	 * 
+	 *
 	 * @param includedStart 开始的数字（包含）
-	 * @param excludedEnd 结束的数字（不包含）
-	 * @param step 步进
+	 * @param excludedEnd   结束的数字（不包含）
+	 * @param step          步进
 	 * @return 数字列表
 	 */
 	public static int[] range(int includedStart, int excludedEnd, int step) {
@@ -1013,9 +1037,9 @@ public class ArrayUtil {
 
 	/**
 	 * 拆分byte数组为几个等份（最后一份可能小于len）
-	 * 
+	 *
 	 * @param array 数组
-	 * @param len 每个小节的长度
+	 * @param len   每个小节的长度
 	 * @return 拆分后的数组
 	 */
 	public static byte[][] split(byte[] array, int len) {
@@ -1042,14 +1066,14 @@ public class ArrayUtil {
 	/**
 	 * 过滤<br>
 	 * 过滤过程通过传入的Editor实现来返回需要的元素内容，这个Editor实现可以实现以下功能：
-	 * 
+	 *
 	 * <pre>
 	 * 1、过滤出需要的对象，如果返回null表示这个元素对象抛弃
 	 * 2、修改元素对象，返回集合中为修改后的对象
 	 * </pre>
-	 * 
-	 * @param <T> 数组元素类型
-	 * @param array 数组
+	 *
+	 * @param <T>    数组元素类型
+	 * @param array  数组
 	 * @param editor 编辑器接口
 	 * @return 过滤后的数组
 	 */
@@ -1072,16 +1096,16 @@ public class ArrayUtil {
 	 * <pre>
 	 * 1、修改元素对象，返回集合中为修改后的对象
 	 * </pre>
-	 *
+	 * <p>
 	 * 注意：此方法会修改原数组！
 	 *
-	 * @param <T> 数组元素类型
-	 * @param array 数组
+	 * @param <T>    数组元素类型
+	 * @param array  数组
 	 * @param editor 编辑器接口
 	 * @since 5.3.3
 	 */
 	public static <T> void edit(T[] array, Editor<T> editor) {
-		for(int i = 0; i < array.length; i++){
+		for (int i = 0; i < array.length; i++) {
 			array[i] = editor.edit(array[i]);
 		}
 	}
@@ -1089,22 +1113,22 @@ public class ArrayUtil {
 	/**
 	 * 过滤<br>
 	 * 过滤过程通过传入的Filter实现来过滤返回需要的元素内容，这个Filter实现可以实现以下功能：
-	 * 
+	 *
 	 * <pre>
 	 * 1、过滤出需要的对象，{@link Filter#accept(Object)}方法返回true的对象将被加入结果集合中
 	 * </pre>
-	 * 
-	 * @param <T> 数组元素类型
-	 * @param array 数组
+	 *
+	 * @param <T>    数组元素类型
+	 * @param array  数组
 	 * @param filter 过滤器接口，用于定义过滤规则，null表示不过滤，返回原数组
 	 * @return 过滤后的数组
 	 * @since 3.2.1
 	 */
 	public static <T> T[] filter(T[] array, Filter<T> filter) {
-		if(null == filter) {
+		if (null == filter) {
 			return array;
 		}
-		
+
 		final ArrayList<T> list = new ArrayList<>(array.length);
 		for (T t : array) {
 			if (filter.accept(t)) {
@@ -1118,7 +1142,7 @@ public class ArrayUtil {
 	/**
 	 * 去除{@code null} 元素
 	 *
-	 * @param <T> 数组元素类型
+	 * @param <T>   数组元素类型
 	 * @param array 数组
 	 * @return 处理后的数组
 	 * @since 3.2.2
@@ -1133,7 +1157,7 @@ public class ArrayUtil {
 	/**
 	 * 去除{@code null}或者"" 元素
 	 *
-	 * @param <T> 数组元素类型
+	 * @param <T>   数组元素类型
 	 * @param array 数组
 	 * @return 处理后的数组
 	 * @since 3.2.2
@@ -1145,7 +1169,7 @@ public class ArrayUtil {
 	/**
 	 * 去除{@code null}或者""或者空白字符串 元素
 	 *
-	 * @param <T> 数组元素类型
+	 * @param <T>   数组元素类型
 	 * @param array 数组
 	 * @return 处理后的数组
 	 * @since 3.2.2
@@ -1156,7 +1180,7 @@ public class ArrayUtil {
 
 	/**
 	 * 数组元素中的null转换为""
-	 * 
+	 *
 	 * @param array 数组
 	 * @return 新数组
 	 * @since 3.2.1
@@ -1172,11 +1196,11 @@ public class ArrayUtil {
 	 * values = [1,2,3,4]<br>
 	 * 则得到的Map是 {a=1, b=2, c=3, d=4}<br>
 	 * 如果两个数组长度不同，则只对应最短部分
-	 * 
-	 * @param <K> Key类型
-	 * @param <V> Value类型
-	 * @param keys 键列表
-	 * @param values 值列表
+	 *
+	 * @param <K>     Key类型
+	 * @param <V>     Value类型
+	 * @param keys    键列表
+	 * @param values  值列表
 	 * @param isOrder 是否有序
 	 * @return Map
 	 * @since 3.0.4
@@ -1202,10 +1226,10 @@ public class ArrayUtil {
 	 * values = [1,2,3,4]<br>
 	 * 则得到的Map是 {a=1, b=2, c=3, d=4}<br>
 	 * 如果两个数组长度不同，则只对应最短部分
-	 * 
-	 * @param <K> Key类型
-	 * @param <V> Value类型
-	 * @param keys 键列表
+	 *
+	 * @param <K>    Key类型
+	 * @param <V>    Value类型
+	 * @param keys   键列表
 	 * @param values 值列表
 	 * @return Map
 	 */
@@ -1214,10 +1238,11 @@ public class ArrayUtil {
 	}
 
 	// ------------------------------------------------------------------- indexOf and lastIndexOf and contains
+
 	/**
 	 * 返回数组中指定元素所在位置，未找到返回{@link #INDEX_NOT_FOUND}
-	 * 
-	 * @param <T> 数组类型
+	 *
+	 * @param <T>   数组类型
 	 * @param array 数组
 	 * @param value 被检查的元素
 	 * @return 数组中指定元素所在位置，未找到返回{@link #INDEX_NOT_FOUND}
@@ -1236,7 +1261,7 @@ public class ArrayUtil {
 
 	/**
 	 * 返回数组中指定元素所在位置，忽略大小写，未找到返回{@link #INDEX_NOT_FOUND}
-	 * 
+	 *
 	 * @param array 数组
 	 * @param value 被检查的元素
 	 * @return 数组中指定元素所在位置，未找到返回{@link #INDEX_NOT_FOUND}
@@ -1255,8 +1280,8 @@ public class ArrayUtil {
 
 	/**
 	 * 返回数组中指定元素所在最后的位置，未找到返回{@link #INDEX_NOT_FOUND}
-	 * 
-	 * @param <T> 数组类型
+	 *
+	 * @param <T>   数组类型
 	 * @param array 数组
 	 * @param value 被检查的元素
 	 * @return 数组中指定元素所在位置，未找到返回{@link #INDEX_NOT_FOUND}
@@ -1275,9 +1300,8 @@ public class ArrayUtil {
 
 	/**
 	 * 数组中是否包含元素
-	 * 
-	 * @param <T> 数组元素类型
-	 * 
+	 *
+	 * @param <T>   数组元素类型
 	 * @param array 数组
 	 * @param value 被检查的元素
 	 * @return 是否包含
@@ -1285,13 +1309,12 @@ public class ArrayUtil {
 	public static <T> boolean contains(T[] array, T value) {
 		return indexOf(array, value) > INDEX_NOT_FOUND;
 	}
-	
+
 	/**
 	 * 数组中是否包含指定元素中的任意一个
-	 * 
-	 * @param <T> 数组元素类型
-	 * 
-	 * @param array 数组
+	 *
+	 * @param <T>    数组元素类型
+	 * @param array  数组
 	 * @param values 被检查的多个元素
 	 * @return 是否包含指定元素中的任意一个
 	 * @since 4.1.20
@@ -1299,7 +1322,7 @@ public class ArrayUtil {
 	@SuppressWarnings("unchecked")
 	public static <T> boolean containsAny(T[] array, T... values) {
 		for (T value : values) {
-			if(contains(array, value)) {
+			if (contains(array, value)) {
 				return true;
 			}
 		}
@@ -1308,7 +1331,7 @@ public class ArrayUtil {
 
 	/**
 	 * 数组中是否包含元素，忽略大小写
-	 * 
+	 *
 	 * @param array 数组
 	 * @param value 被检查的元素
 	 * @return 是否包含
@@ -1320,7 +1343,7 @@ public class ArrayUtil {
 
 	/**
 	 * 返回数组中指定元素所在位置，未找到返回{@link #INDEX_NOT_FOUND}
-	 * 
+	 *
 	 * @param array 数组
 	 * @param value 被检查的元素
 	 * @return 数组中指定元素所在位置，未找到返回{@link #INDEX_NOT_FOUND}
@@ -1339,7 +1362,7 @@ public class ArrayUtil {
 
 	/**
 	 * 返回数组中指定元素所在最后的位置，未找到返回{@link #INDEX_NOT_FOUND}
-	 * 
+	 *
 	 * @param array 数组
 	 * @param value 被检查的元素
 	 * @return 数组中指定元素所在位置，未找到返回{@link #INDEX_NOT_FOUND}
@@ -1358,7 +1381,7 @@ public class ArrayUtil {
 
 	/**
 	 * 数组中是否包含元素
-	 * 
+	 *
 	 * @param array 数组
 	 * @param value 被检查的元素
 	 * @return 是否包含
@@ -1370,7 +1393,7 @@ public class ArrayUtil {
 
 	/**
 	 * 返回数组中指定元素所在位置，未找到返回{@link #INDEX_NOT_FOUND}
-	 * 
+	 *
 	 * @param array 数组
 	 * @param value 被检查的元素
 	 * @return 数组中指定元素所在位置，未找到返回{@link #INDEX_NOT_FOUND}
@@ -1389,7 +1412,7 @@ public class ArrayUtil {
 
 	/**
 	 * 返回数组中指定元素所在最后的位置，未找到返回{@link #INDEX_NOT_FOUND}
-	 * 
+	 *
 	 * @param array 数组
 	 * @param value 被检查的元素
 	 * @return 数组中指定元素所在位置，未找到返回{@link #INDEX_NOT_FOUND}
@@ -1408,7 +1431,7 @@ public class ArrayUtil {
 
 	/**
 	 * 数组中是否包含元素
-	 * 
+	 *
 	 * @param array 数组
 	 * @param value 被检查的元素
 	 * @return 是否包含
@@ -1420,7 +1443,7 @@ public class ArrayUtil {
 
 	/**
 	 * 返回数组中指定元素所在位置，未找到返回{@link #INDEX_NOT_FOUND}
-	 * 
+	 *
 	 * @param array 数组
 	 * @param value 被检查的元素
 	 * @return 数组中指定元素所在位置，未找到返回{@link #INDEX_NOT_FOUND}
@@ -1439,7 +1462,7 @@ public class ArrayUtil {
 
 	/**
 	 * 返回数组中指定元素所在最后的位置，未找到返回{@link #INDEX_NOT_FOUND}
-	 * 
+	 *
 	 * @param array 数组
 	 * @param value 被检查的元素
 	 * @return 数组中指定元素所在位置，未找到返回{@link #INDEX_NOT_FOUND}
@@ -1458,7 +1481,7 @@ public class ArrayUtil {
 
 	/**
 	 * 数组中是否包含元素
-	 * 
+	 *
 	 * @param array 数组
 	 * @param value 被检查的元素
 	 * @return 是否包含
@@ -1470,7 +1493,7 @@ public class ArrayUtil {
 
 	/**
 	 * 返回数组中指定元素所在位置，未找到返回{@link #INDEX_NOT_FOUND}
-	 * 
+	 *
 	 * @param array 数组
 	 * @param value 被检查的元素
 	 * @return 数组中指定元素所在位置，未找到返回{@link #INDEX_NOT_FOUND}
@@ -1489,7 +1512,7 @@ public class ArrayUtil {
 
 	/**
 	 * 返回数组中指定元素所在最后的位置，未找到返回{@link #INDEX_NOT_FOUND}
-	 * 
+	 *
 	 * @param array 数组
 	 * @param value 被检查的元素
 	 * @return 数组中指定元素所在位置，未找到返回{@link #INDEX_NOT_FOUND}
@@ -1508,7 +1531,7 @@ public class ArrayUtil {
 
 	/**
 	 * 数组中是否包含元素
-	 * 
+	 *
 	 * @param array 数组
 	 * @param value 被检查的元素
 	 * @return 是否包含
@@ -1520,7 +1543,7 @@ public class ArrayUtil {
 
 	/**
 	 * 返回数组中指定元素所在位置，未找到返回{@link #INDEX_NOT_FOUND}
-	 * 
+	 *
 	 * @param array 数组
 	 * @param value 被检查的元素
 	 * @return 数组中指定元素所在位置，未找到返回{@link #INDEX_NOT_FOUND}
@@ -1539,7 +1562,7 @@ public class ArrayUtil {
 
 	/**
 	 * 返回数组中指定元素所在最后的位置，未找到返回{@link #INDEX_NOT_FOUND}
-	 * 
+	 *
 	 * @param array 数组
 	 * @param value 被检查的元素
 	 * @return 数组中指定元素所在位置，未找到返回{@link #INDEX_NOT_FOUND}
@@ -1558,7 +1581,7 @@ public class ArrayUtil {
 
 	/**
 	 * 数组中是否包含元素
-	 * 
+	 *
 	 * @param array 数组
 	 * @param value 被检查的元素
 	 * @return 是否包含
@@ -1570,7 +1593,7 @@ public class ArrayUtil {
 
 	/**
 	 * 返回数组中指定元素所在位置，未找到返回{@link #INDEX_NOT_FOUND}
-	 * 
+	 *
 	 * @param array 数组
 	 * @param value 被检查的元素
 	 * @return 数组中指定元素所在位置，未找到返回{@link #INDEX_NOT_FOUND}
@@ -1589,7 +1612,7 @@ public class ArrayUtil {
 
 	/**
 	 * 返回数组中指定元素所在最后的位置，未找到返回{@link #INDEX_NOT_FOUND}
-	 * 
+	 *
 	 * @param array 数组
 	 * @param value 被检查的元素
 	 * @return 数组中指定元素所在位置，未找到返回{@link #INDEX_NOT_FOUND}
@@ -1608,7 +1631,7 @@ public class ArrayUtil {
 
 	/**
 	 * 数组中是否包含元素
-	 * 
+	 *
 	 * @param array 数组
 	 * @param value 被检查的元素
 	 * @return 是否包含
@@ -1620,7 +1643,7 @@ public class ArrayUtil {
 
 	/**
 	 * 返回数组中指定元素所在位置，未找到返回{@link #INDEX_NOT_FOUND}
-	 * 
+	 *
 	 * @param array 数组
 	 * @param value 被检查的元素
 	 * @return 数组中指定元素所在位置，未找到返回{@link #INDEX_NOT_FOUND}
@@ -1639,7 +1662,7 @@ public class ArrayUtil {
 
 	/**
 	 * 返回数组中指定元素所在最后的位置，未找到返回{@link #INDEX_NOT_FOUND}
-	 * 
+	 *
 	 * @param array 数组
 	 * @param value 被检查的元素
 	 * @return 数组中指定元素所在位置，未找到返回{@link #INDEX_NOT_FOUND}
@@ -1658,7 +1681,7 @@ public class ArrayUtil {
 
 	/**
 	 * 数组中是否包含元素
-	 * 
+	 *
 	 * @param array 数组
 	 * @param value 被检查的元素
 	 * @return 是否包含
@@ -1670,7 +1693,7 @@ public class ArrayUtil {
 
 	/**
 	 * 返回数组中指定元素所在位置，未找到返回{@link #INDEX_NOT_FOUND}
-	 * 
+	 *
 	 * @param array 数组
 	 * @param value 被检查的元素
 	 * @return 数组中指定元素所在位置，未找到返回{@link #INDEX_NOT_FOUND}
@@ -1689,7 +1712,7 @@ public class ArrayUtil {
 
 	/**
 	 * 返回数组中指定元素所在最后的位置，未找到返回{@link #INDEX_NOT_FOUND}
-	 * 
+	 *
 	 * @param array 数组
 	 * @param value 被检查的元素
 	 * @return 数组中指定元素所在位置，未找到返回{@link #INDEX_NOT_FOUND}
@@ -1708,7 +1731,7 @@ public class ArrayUtil {
 
 	/**
 	 * 数组中是否包含元素
-	 * 
+	 *
 	 * @param array 数组
 	 * @param value 被检查的元素
 	 * @return 是否包含
@@ -1719,9 +1742,10 @@ public class ArrayUtil {
 	}
 
 	// ------------------------------------------------------------------- Wrap and unwrap
+
 	/**
 	 * 将原始类型数组包装为包装类型
-	 * 
+	 *
 	 * @param values 原始类型数组
 	 * @return 包装类型数组
 	 */
@@ -1743,7 +1767,7 @@ public class ArrayUtil {
 
 	/**
 	 * 包装类数组转为原始类型数组
-	 * 
+	 *
 	 * @param values 包装类型数组
 	 * @return 原始类型数组
 	 */
@@ -1765,7 +1789,7 @@ public class ArrayUtil {
 
 	/**
 	 * 将原始类型数组包装为包装类型
-	 * 
+	 *
 	 * @param values 原始类型数组
 	 * @return 包装类型数组
 	 */
@@ -1787,7 +1811,7 @@ public class ArrayUtil {
 
 	/**
 	 * 包装类数组转为原始类型数组
-	 * 
+	 *
 	 * @param values 包装类型数组
 	 * @return 原始类型数组
 	 */
@@ -1809,7 +1833,7 @@ public class ArrayUtil {
 
 	/**
 	 * 将原始类型数组包装为包装类型
-	 * 
+	 *
 	 * @param values 原始类型数组
 	 * @return 包装类型数组
 	 */
@@ -1831,7 +1855,7 @@ public class ArrayUtil {
 
 	/**
 	 * 包装类数组转为原始类型数组
-	 * 
+	 *
 	 * @param values 包装类型数组
 	 * @return 原始类型数组
 	 */
@@ -1853,7 +1877,7 @@ public class ArrayUtil {
 
 	/**
 	 * 将原始类型数组包装为包装类型
-	 * 
+	 *
 	 * @param values 原始类型数组
 	 * @return 包装类型数组
 	 */
@@ -1875,7 +1899,7 @@ public class ArrayUtil {
 
 	/**
 	 * 包装类数组转为原始类型数组
-	 * 
+	 *
 	 * @param values 包装类型数组
 	 * @return 原始类型数组
 	 */
@@ -1890,14 +1914,14 @@ public class ArrayUtil {
 
 		final byte[] array = new byte[length];
 		for (int i = 0; i < length; i++) {
-			array[i] = ObjectUtil.defaultIfNull(values[i], (byte)0);
+			array[i] = ObjectUtil.defaultIfNull(values[i], (byte) 0);
 		}
 		return array;
 	}
 
 	/**
 	 * 将原始类型数组包装为包装类型
-	 * 
+	 *
 	 * @param values 原始类型数组
 	 * @return 包装类型数组
 	 */
@@ -1919,7 +1943,7 @@ public class ArrayUtil {
 
 	/**
 	 * 包装类数组转为原始类型数组
-	 * 
+	 *
 	 * @param values 包装类型数组
 	 * @return 原始类型数组
 	 */
@@ -1934,14 +1958,14 @@ public class ArrayUtil {
 
 		final short[] array = new short[length];
 		for (int i = 0; i < length; i++) {
-			array[i] = ObjectUtil.defaultIfNull(values[i], (short)0);
+			array[i] = ObjectUtil.defaultIfNull(values[i], (short) 0);
 		}
 		return array;
 	}
 
 	/**
 	 * 将原始类型数组包装为包装类型
-	 * 
+	 *
 	 * @param values 原始类型数组
 	 * @return 包装类型数组
 	 */
@@ -1963,7 +1987,7 @@ public class ArrayUtil {
 
 	/**
 	 * 包装类数组转为原始类型数组
-	 * 
+	 *
 	 * @param values 包装类型数组
 	 * @return 原始类型数组
 	 */
@@ -1985,7 +2009,7 @@ public class ArrayUtil {
 
 	/**
 	 * 将原始类型数组包装为包装类型
-	 * 
+	 *
 	 * @param values 原始类型数组
 	 * @return 包装类型数组
 	 */
@@ -2007,7 +2031,7 @@ public class ArrayUtil {
 
 	/**
 	 * 包装类数组转为原始类型数组
-	 * 
+	 *
 	 * @param values 包装类型数组
 	 * @return 原始类型数组
 	 */
@@ -2029,7 +2053,7 @@ public class ArrayUtil {
 
 	/**
 	 * 将原始类型数组包装为包装类型
-	 * 
+	 *
 	 * @param values 原始类型数组
 	 * @return 包装类型数组
 	 */
@@ -2051,7 +2075,7 @@ public class ArrayUtil {
 
 	/**
 	 * 包装类数组转为原始类型数组
-	 * 
+	 *
 	 * @param values 包装类型数组
 	 * @return 原始类型数组
 	 */
@@ -2073,7 +2097,7 @@ public class ArrayUtil {
 
 	/**
 	 * 包装数组对象
-	 * 
+	 *
 	 * @param obj 对象，可以是对象数组或者基本类型数组
 	 * @return 包装类型数组或对象数组
 	 * @throws UtilException 对象为非数组
@@ -2088,24 +2112,24 @@ public class ArrayUtil {
 			} catch (Exception e) {
 				final String className = obj.getClass().getComponentType().getName();
 				switch (className) {
-				case "long":
-					return wrap((long[]) obj);
-				case "int":
-					return wrap((int[]) obj);
-				case "short":
-					return wrap((short[]) obj);
-				case "char":
-					return wrap((char[]) obj);
-				case "byte":
-					return wrap((byte[]) obj);
-				case "boolean":
-					return wrap((boolean[]) obj);
-				case "float":
-					return wrap((float[]) obj);
-				case "double":
-					return wrap((double[]) obj);
-				default:
-					throw new UtilException(e);
+					case "long":
+						return wrap((long[]) obj);
+					case "int":
+						return wrap((int[]) obj);
+					case "short":
+						return wrap((short[]) obj);
+					case "char":
+						return wrap((char[]) obj);
+					case "byte":
+						return wrap((byte[]) obj);
+					case "boolean":
+						return wrap((boolean[]) obj);
+					case "float":
+						return wrap((float[]) obj);
+					case "double":
+						return wrap((double[]) obj);
+					default:
+						throw new UtilException(e);
 				}
 			}
 		}
@@ -2114,7 +2138,7 @@ public class ArrayUtil {
 
 	/**
 	 * 对象是否为数组对象
-	 * 
+	 *
 	 * @param obj 对象
 	 * @return 是否为数组对象，如果为{@code null} 返回false
 	 */
@@ -2129,8 +2153,8 @@ public class ArrayUtil {
 	/**
 	 * 获取数组对象中指定index的值，支持负数，例如-1表示倒数第一个值<br>
 	 * 如果数组下标越界，返回null
-	 * 
-	 * @param <T> 数组元素类型
+	 *
+	 * @param <T>   数组元素类型
 	 * @param array 数组对象
 	 * @param index 下标，支持负数
 	 * @return 值
@@ -2138,10 +2162,10 @@ public class ArrayUtil {
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T> T get(Object array, int index) {
-		if(null == array) {
+		if (null == array) {
 			return null;
 		}
-		
+
 		if (index < 0) {
 			index += Array.getLength(array);
 		}
@@ -2154,34 +2178,34 @@ public class ArrayUtil {
 
 	/**
 	 * 获取数组中指定多个下标元素值，组成新数组
-	 * 
-	 * @param <T> 数组元素类型
-	 * @param array 数组
+	 *
+	 * @param <T>     数组元素类型
+	 * @param array   数组
 	 * @param indexes 下标列表
 	 * @return 结果
 	 */
 	public static <T> T[] getAny(Object array, int... indexes) {
-		if(null == array) {
+		if (null == array) {
 			return null;
 		}
-		
+
 		final T[] result = newArray(array.getClass().getComponentType(), indexes.length);
 		for (int i : indexes) {
 			result[i] = get(array, i);
 		}
 		return result;
 	}
-	
+
 	/**
 	 * 获取子数组
 	 *
-	 * @param <T> 数组元素类型
+	 * @param <T>   数组元素类型
 	 * @param array 数组
 	 * @param start 开始位置（包括）
-	 * @param end 结束位置（不包括）
+	 * @param end   结束位置（不包括）
 	 * @return 新的数组
-	 * @since 4.2.2
 	 * @see Arrays#copyOfRange(Object[], int, int)
+	 * @since 4.2.2
 	 */
 	public static <T> T[] sub(T[] array, int start, int end) {
 		int length = length(array);
@@ -2207,16 +2231,16 @@ public class ArrayUtil {
 		}
 		return Arrays.copyOfRange(array, start, end);
 	}
-	
+
 	/**
 	 * 获取子数组
-	 * 
+	 *
 	 * @param array 数组
 	 * @param start 开始位置（包括）
-	 * @param end 结束位置（不包括）
+	 * @param end   结束位置（不包括）
 	 * @return 新的数组
-	 * @since 4.5.2
 	 * @see Arrays#copyOfRange(Object[], int, int)
+	 * @since 4.5.2
 	 */
 	public static byte[] sub(byte[] array, int start, int end) {
 		int length = length(array);
@@ -2242,16 +2266,16 @@ public class ArrayUtil {
 		}
 		return Arrays.copyOfRange(array, start, end);
 	}
-	
+
 	/**
 	 * 获取子数组
-	 * 
+	 *
 	 * @param array 数组
 	 * @param start 开始位置（包括）
-	 * @param end 结束位置（不包括）
+	 * @param end   结束位置（不包括）
 	 * @return 新的数组
-	 * @since 4.5.2
 	 * @see Arrays#copyOfRange(Object[], int, int)
+	 * @since 4.5.2
 	 */
 	public static int[] sub(int[] array, int start, int end) {
 		int length = length(array);
@@ -2277,16 +2301,16 @@ public class ArrayUtil {
 		}
 		return Arrays.copyOfRange(array, start, end);
 	}
-	
+
 	/**
 	 * 获取子数组
-	 * 
+	 *
 	 * @param array 数组
 	 * @param start 开始位置（包括）
-	 * @param end 结束位置（不包括）
+	 * @param end   结束位置（不包括）
 	 * @return 新的数组
-	 * @since 4.5.2
 	 * @see Arrays#copyOfRange(Object[], int, int)
+	 * @since 4.5.2
 	 */
 	public static long[] sub(long[] array, int start, int end) {
 		int length = length(array);
@@ -2312,16 +2336,16 @@ public class ArrayUtil {
 		}
 		return Arrays.copyOfRange(array, start, end);
 	}
-	
+
 	/**
 	 * 获取子数组
-	 * 
+	 *
 	 * @param array 数组
 	 * @param start 开始位置（包括）
-	 * @param end 结束位置（不包括）
+	 * @param end   结束位置（不包括）
 	 * @return 新的数组
-	 * @since 4.5.2
 	 * @see Arrays#copyOfRange(Object[], int, int)
+	 * @since 4.5.2
 	 */
 	public static short[] sub(short[] array, int start, int end) {
 		int length = length(array);
@@ -2347,16 +2371,16 @@ public class ArrayUtil {
 		}
 		return Arrays.copyOfRange(array, start, end);
 	}
-	
+
 	/**
 	 * 获取子数组
-	 * 
+	 *
 	 * @param array 数组
 	 * @param start 开始位置（包括）
-	 * @param end 结束位置（不包括）
+	 * @param end   结束位置（不包括）
 	 * @return 新的数组
-	 * @since 4.5.2
 	 * @see Arrays#copyOfRange(Object[], int, int)
+	 * @since 4.5.2
 	 */
 	public static char[] sub(char[] array, int start, int end) {
 		int length = length(array);
@@ -2382,16 +2406,16 @@ public class ArrayUtil {
 		}
 		return Arrays.copyOfRange(array, start, end);
 	}
-	
+
 	/**
 	 * 获取子数组
-	 * 
+	 *
 	 * @param array 数组
 	 * @param start 开始位置（包括）
-	 * @param end 结束位置（不包括）
+	 * @param end   结束位置（不包括）
 	 * @return 新的数组
-	 * @since 4.5.2
 	 * @see Arrays#copyOfRange(Object[], int, int)
+	 * @since 4.5.2
 	 */
 	public static double[] sub(double[] array, int start, int end) {
 		int length = length(array);
@@ -2417,16 +2441,16 @@ public class ArrayUtil {
 		}
 		return Arrays.copyOfRange(array, start, end);
 	}
-	
+
 	/**
 	 * 获取子数组
-	 * 
+	 *
 	 * @param array 数组
 	 * @param start 开始位置（包括）
-	 * @param end 结束位置（不包括）
+	 * @param end   结束位置（不包括）
 	 * @return 新的数组
-	 * @since 4.5.2
 	 * @see Arrays#copyOfRange(Object[], int, int)
+	 * @since 4.5.2
 	 */
 	public static float[] sub(float[] array, int start, int end) {
 		int length = length(array);
@@ -2452,16 +2476,16 @@ public class ArrayUtil {
 		}
 		return Arrays.copyOfRange(array, start, end);
 	}
-	
+
 	/**
 	 * 获取子数组
-	 * 
+	 *
 	 * @param array 数组
 	 * @param start 开始位置（包括）
-	 * @param end 结束位置（不包括）
+	 * @param end   结束位置（不包括）
 	 * @return 新的数组
-	 * @since 4.5.2
 	 * @see Arrays#copyOfRange(Object[], int, int)
+	 * @since 4.5.2
 	 */
 	public static boolean[] sub(boolean[] array, int start, int end) {
 		int length = length(array);
@@ -2490,10 +2514,10 @@ public class ArrayUtil {
 
 	/**
 	 * 获取子数组
-	 * 
+	 *
 	 * @param array 数组
 	 * @param start 开始位置（包括）
-	 * @param end 结束位置（不包括）
+	 * @param end   结束位置（不包括）
 	 * @return 新的数组
 	 * @since 4.0.6
 	 */
@@ -2503,11 +2527,11 @@ public class ArrayUtil {
 
 	/**
 	 * 获取子数组
-	 * 
+	 *
 	 * @param array 数组
 	 * @param start 开始位置（包括）
-	 * @param end 结束位置（不包括）
-	 * @param step 步进
+	 * @param end   结束位置（不包括）
+	 * @param step  步进
 	 * @return 新的数组
 	 * @since 4.0.6
 	 */
@@ -2548,7 +2572,7 @@ public class ArrayUtil {
 
 	/**
 	 * 数组或集合转String
-	 * 
+	 *
 	 * @param obj 集合或数组对象
 	 * @return 数组字符串，与集合转字符串格式相同
 	 */
@@ -2557,21 +2581,21 @@ public class ArrayUtil {
 			return null;
 		}
 
-		if(obj instanceof long[]){
+		if (obj instanceof long[]) {
 			return Arrays.toString((long[]) obj);
-		} else if(obj instanceof int[]){
+		} else if (obj instanceof int[]) {
 			return Arrays.toString((int[]) obj);
-		} else if(obj instanceof short[]){
+		} else if (obj instanceof short[]) {
 			return Arrays.toString((short[]) obj);
-		} else if(obj instanceof char[]){
+		} else if (obj instanceof char[]) {
 			return Arrays.toString((char[]) obj);
-		} else if(obj instanceof byte[]){
+		} else if (obj instanceof byte[]) {
 			return Arrays.toString((byte[]) obj);
-		} else if(obj instanceof boolean[]){
+		} else if (obj instanceof boolean[]) {
 			return Arrays.toString((boolean[]) obj);
-		} else if(obj instanceof float[]){
+		} else if (obj instanceof float[]) {
 			return Arrays.toString((float[]) obj);
-		} else if(obj instanceof double[]){
+		} else if (obj instanceof double[]) {
 			return Arrays.toString((double[]) obj);
 		} else if (ArrayUtil.isArray(obj)) {
 			// 对象数组
@@ -2588,7 +2612,7 @@ public class ArrayUtil {
 	/**
 	 * 获取数组长度<br>
 	 * 如果参数为{@code null}，返回0
-	 * 
+	 *
 	 * <pre>
 	 * ArrayUtil.length(null)            = 0
 	 * ArrayUtil.length([])              = 0
@@ -2597,12 +2621,12 @@ public class ArrayUtil {
 	 * ArrayUtil.length([1, 2, 3])       = 3
 	 * ArrayUtil.length(["a", "b", "c"]) = 3
 	 * </pre>
-	 * 
+	 *
 	 * @param array 数组对象
 	 * @return 数组长度
 	 * @throws IllegalArgumentException 如果参数不为数组，抛出此异常
-	 * @since 3.0.8
 	 * @see Array#getLength(Object)
+	 * @since 3.0.8
 	 */
 	public static int length(Object array) throws IllegalArgumentException {
 		if (null == array) {
@@ -2610,12 +2634,12 @@ public class ArrayUtil {
 		}
 		return Array.getLength(array);
 	}
-	
+
 	/**
 	 * 以 conjunction 为分隔符将数组转换为字符串
-	 * 
-	 * @param <T> 被处理的集合
-	 * @param array 数组
+	 *
+	 * @param <T>         被处理的集合
+	 * @param array       数组
 	 * @param conjunction 分隔符
 	 * @return 连接后的字符串
 	 */
@@ -2625,12 +2649,12 @@ public class ArrayUtil {
 
 	/**
 	 * 以 conjunction 为分隔符将数组转换为字符串
-	 * 
-	 * @param <T> 被处理的集合
-	 * @param array 数组
+	 *
+	 * @param <T>         被处理的集合
+	 * @param array       数组
 	 * @param conjunction 分隔符
-	 * @param prefix 每个元素添加的前缀，null表示不添加
-	 * @param suffix 每个元素添加的后缀，null表示不添加
+	 * @param prefix      每个元素添加的前缀，null表示不添加
+	 * @param suffix      每个元素添加的后缀，null表示不添加
 	 * @return 连接后的字符串
 	 * @since 4.0.10
 	 */
@@ -2663,10 +2687,10 @@ public class ArrayUtil {
 	/**
 	 * 以 conjunction 为分隔符将数组转换为字符串
 	 *
-	 * @param <T> 被处理的集合
-	 * @param array 数组
+	 * @param <T>         被处理的集合
+	 * @param array       数组
 	 * @param conjunction 分隔符
-	 * @param editor 每个元素的编辑器，null表示不编辑
+	 * @param editor      每个元素的编辑器，null表示不编辑
 	 * @return 连接后的字符串
 	 * @since 5.3.3
 	 */
@@ -2683,10 +2707,10 @@ public class ArrayUtil {
 			} else {
 				sb.append(conjunction);
 			}
-			if(null != editor){
+			if (null != editor) {
 				item = editor.edit(item);
 			}
-			if(null != item){
+			if (null != item) {
 				sb.append(StrUtil.toString(item));
 			}
 		}
@@ -2695,8 +2719,8 @@ public class ArrayUtil {
 
 	/**
 	 * 以 conjunction 为分隔符将数组转换为字符串
-	 * 
-	 * @param array 数组
+	 *
+	 * @param array       数组
 	 * @param conjunction 分隔符
 	 * @return 连接后的字符串
 	 */
@@ -2720,8 +2744,8 @@ public class ArrayUtil {
 
 	/**
 	 * 以 conjunction 为分隔符将数组转换为字符串
-	 * 
-	 * @param array 数组
+	 *
+	 * @param array       数组
 	 * @param conjunction 分隔符
 	 * @return 连接后的字符串
 	 */
@@ -2745,8 +2769,8 @@ public class ArrayUtil {
 
 	/**
 	 * 以 conjunction 为分隔符将数组转换为字符串
-	 * 
-	 * @param array 数组
+	 *
+	 * @param array       数组
 	 * @param conjunction 分隔符
 	 * @return 连接后的字符串
 	 */
@@ -2770,8 +2794,8 @@ public class ArrayUtil {
 
 	/**
 	 * 以 conjunction 为分隔符将数组转换为字符串
-	 * 
-	 * @param array 数组
+	 *
+	 * @param array       数组
 	 * @param conjunction 分隔符
 	 * @return 连接后的字符串
 	 */
@@ -2795,8 +2819,8 @@ public class ArrayUtil {
 
 	/**
 	 * 以 conjunction 为分隔符将数组转换为字符串
-	 * 
-	 * @param array 数组
+	 *
+	 * @param array       数组
 	 * @param conjunction 分隔符
 	 * @return 连接后的字符串
 	 */
@@ -2820,8 +2844,8 @@ public class ArrayUtil {
 
 	/**
 	 * 以 conjunction 为分隔符将数组转换为字符串
-	 * 
-	 * @param array 数组
+	 *
+	 * @param array       数组
 	 * @param conjunction 分隔符
 	 * @return 连接后的字符串
 	 */
@@ -2845,8 +2869,8 @@ public class ArrayUtil {
 
 	/**
 	 * 以 conjunction 为分隔符将数组转换为字符串
-	 * 
-	 * @param array 数组
+	 *
+	 * @param array       数组
 	 * @param conjunction 分隔符
 	 * @return 连接后的字符串
 	 */
@@ -2870,8 +2894,8 @@ public class ArrayUtil {
 
 	/**
 	 * 以 conjunction 为分隔符将数组转换为字符串
-	 * 
-	 * @param array 数组
+	 *
+	 * @param array       数组
 	 * @param conjunction 分隔符
 	 * @return 连接后的字符串
 	 */
@@ -2895,8 +2919,8 @@ public class ArrayUtil {
 
 	/**
 	 * 以 conjunction 为分隔符将数组转换为字符串
-	 * 
-	 * @param array 数组
+	 *
+	 * @param array       数组
 	 * @param conjunction 分隔符
 	 * @return 连接后的字符串
 	 */
@@ -2906,24 +2930,24 @@ public class ArrayUtil {
 			if (componentType.isPrimitive()) {
 				final String componentTypeName = componentType.getName();
 				switch (componentTypeName) {
-				case "long":
-					return join((long[]) array, conjunction);
-				case "int":
-					return join((int[]) array, conjunction);
-				case "short":
-					return join((short[]) array, conjunction);
-				case "char":
-					return join((char[]) array, conjunction);
-				case "byte":
-					return join((byte[]) array, conjunction);
-				case "boolean":
-					return join((boolean[]) array, conjunction);
-				case "float":
-					return join((float[]) array, conjunction);
-				case "double":
-					return join((double[]) array, conjunction);
-				default:
-					throw new UtilException("Unknown primitive type: [{}]", componentTypeName);
+					case "long":
+						return join((long[]) array, conjunction);
+					case "int":
+						return join((int[]) array, conjunction);
+					case "short":
+						return join((short[]) array, conjunction);
+					case "char":
+						return join((char[]) array, conjunction);
+					case "byte":
+						return join((byte[]) array, conjunction);
+					case "boolean":
+						return join((boolean[]) array, conjunction);
+					case "float":
+						return join((float[]) array, conjunction);
+					case "double":
+						return join((double[]) array, conjunction);
+					default:
+						throw new UtilException("Unknown primitive type: [{}]", componentTypeName);
 				}
 			} else {
 				return join((Object[]) array, conjunction);
@@ -2934,7 +2958,7 @@ public class ArrayUtil {
 
 	/**
 	 * {@link ByteBuffer} 转byte数组
-	 * 
+	 *
 	 * @param bytebuffer {@link ByteBuffer}
 	 * @return byte数组
 	 * @since 3.0.1
@@ -2955,9 +2979,9 @@ public class ArrayUtil {
 
 	/**
 	 * 将集合转为数组
-	 * 
-	 * @param <T> 数组元素类型
-	 * @param iterator {@link Iterator}
+	 *
+	 * @param <T>           数组元素类型
+	 * @param iterator      {@link Iterator}
 	 * @param componentType 集合元素类型
 	 * @return 数组
 	 * @since 3.0.9
@@ -2968,9 +2992,9 @@ public class ArrayUtil {
 
 	/**
 	 * 将集合转为数组
-	 * 
-	 * @param <T> 数组元素类型
-	 * @param iterable {@link Iterable}
+	 *
+	 * @param <T>           数组元素类型
+	 * @param iterable      {@link Iterable}
 	 * @param componentType 集合元素类型
 	 * @return 数组
 	 * @since 3.0.9
@@ -2981,9 +3005,9 @@ public class ArrayUtil {
 
 	/**
 	 * 将集合转为数组
-	 * 
-	 * @param <T> 数组元素类型
-	 * @param collection 集合
+	 *
+	 * @param <T>           数组元素类型
+	 * @param collection    集合
 	 * @param componentType 集合元素类型
 	 * @return 数组
 	 * @since 3.0.9
@@ -2993,12 +3017,12 @@ public class ArrayUtil {
 	}
 
 	// ---------------------------------------------------------------------- remove
+
 	/**
 	 * 移除数组中对应位置的元素<br>
 	 * copy from commons-lang
-	 * 
-	 * @param <T> 数组元素类型
-	 * 
+	 *
+	 * @param <T>   数组元素类型
 	 * @param array 数组对象，可以是对象数组，也可以原始类型数组
 	 * @param index 位置，如果位置小于0或者大于长度，返回原数组
 	 * @return 去掉指定元素后的新数组或原数组
@@ -3013,7 +3037,7 @@ public class ArrayUtil {
 	/**
 	 * 移除数组中对应位置的元素<br>
 	 * copy from commons-lang
-	 * 
+	 *
 	 * @param array 数组对象，可以是对象数组，也可以原始类型数组
 	 * @param index 位置，如果位置小于0或者大于长度，返回原数组
 	 * @return 去掉指定元素后的新数组或原数组
@@ -3027,7 +3051,7 @@ public class ArrayUtil {
 	/**
 	 * 移除数组中对应位置的元素<br>
 	 * copy from commons-lang
-	 * 
+	 *
 	 * @param array 数组对象，可以是对象数组，也可以原始类型数组
 	 * @param index 位置，如果位置小于0或者大于长度，返回原数组
 	 * @return 去掉指定元素后的新数组或原数组
@@ -3041,7 +3065,7 @@ public class ArrayUtil {
 	/**
 	 * 移除数组中对应位置的元素<br>
 	 * copy from commons-lang
-	 * 
+	 *
 	 * @param array 数组对象，可以是对象数组，也可以原始类型数组
 	 * @param index 位置，如果位置小于0或者大于长度，返回原数组
 	 * @return 去掉指定元素后的新数组或原数组
@@ -3055,7 +3079,7 @@ public class ArrayUtil {
 	/**
 	 * 移除数组中对应位置的元素<br>
 	 * copy from commons-lang
-	 * 
+	 *
 	 * @param array 数组对象，可以是对象数组，也可以原始类型数组
 	 * @param index 位置，如果位置小于0或者大于长度，返回原数组
 	 * @return 去掉指定元素后的新数组或原数组
@@ -3069,7 +3093,7 @@ public class ArrayUtil {
 	/**
 	 * 移除数组中对应位置的元素<br>
 	 * copy from commons-lang
-	 * 
+	 *
 	 * @param array 数组对象，可以是对象数组，也可以原始类型数组
 	 * @param index 位置，如果位置小于0或者大于长度，返回原数组
 	 * @return 去掉指定元素后的新数组或原数组
@@ -3083,7 +3107,7 @@ public class ArrayUtil {
 	/**
 	 * 移除数组中对应位置的元素<br>
 	 * copy from commons-lang
-	 * 
+	 *
 	 * @param array 数组对象，可以是对象数组，也可以原始类型数组
 	 * @param index 位置，如果位置小于0或者大于长度，返回原数组
 	 * @return 去掉指定元素后的新数组或原数组
@@ -3097,7 +3121,7 @@ public class ArrayUtil {
 	/**
 	 * 移除数组中对应位置的元素<br>
 	 * copy from commons-lang
-	 * 
+	 *
 	 * @param array 数组对象，可以是对象数组，也可以原始类型数组
 	 * @param index 位置，如果位置小于0或者大于长度，返回原数组
 	 * @return 去掉指定元素后的新数组或原数组
@@ -3111,7 +3135,7 @@ public class ArrayUtil {
 	/**
 	 * 移除数组中对应位置的元素<br>
 	 * copy from commons-lang
-	 * 
+	 *
 	 * @param array 数组对象，可以是对象数组，也可以原始类型数组
 	 * @param index 位置，如果位置小于0或者大于长度，返回原数组
 	 * @return 去掉指定元素后的新数组或原数组
@@ -3125,7 +3149,7 @@ public class ArrayUtil {
 	/**
 	 * 移除数组中对应位置的元素<br>
 	 * copy from commons-lang
-	 * 
+	 *
 	 * @param array 数组对象，可以是对象数组，也可以原始类型数组
 	 * @param index 位置，如果位置小于0或者大于长度，返回原数组
 	 * @return 去掉指定元素后的新数组或原数组
@@ -3153,12 +3177,13 @@ public class ArrayUtil {
 	}
 
 	// ---------------------------------------------------------------------- remove
+
 	/**
 	 * 移除数组中指定的元素<br>
 	 * 只会移除匹配到的第一个元素 copy from commons-lang
-	 * 
-	 * @param <T> 数组元素类型
-	 * @param array 数组对象，可以是对象数组，也可以原始类型数组
+	 *
+	 * @param <T>     数组元素类型
+	 * @param array   数组对象，可以是对象数组，也可以原始类型数组
 	 * @param element 要移除的元素
 	 * @return 去掉指定元素后的新数组或原数组
 	 * @throws IllegalArgumentException 参数对象不为数组对象
@@ -3171,8 +3196,8 @@ public class ArrayUtil {
 	/**
 	 * 移除数组中指定的元素<br>
 	 * 只会移除匹配到的第一个元素 copy from commons-lang
-	 * 
-	 * @param array 数组对象，可以是对象数组，也可以原始类型数组
+	 *
+	 * @param array   数组对象，可以是对象数组，也可以原始类型数组
 	 * @param element 要移除的元素
 	 * @return 去掉指定元素后的新数组或原数组
 	 * @throws IllegalArgumentException 参数对象不为数组对象
@@ -3185,8 +3210,8 @@ public class ArrayUtil {
 	/**
 	 * 移除数组中指定的元素<br>
 	 * 只会移除匹配到的第一个元素 copy from commons-lang
-	 * 
-	 * @param array 数组对象，可以是对象数组，也可以原始类型数组
+	 *
+	 * @param array   数组对象，可以是对象数组，也可以原始类型数组
 	 * @param element 要移除的元素
 	 * @return 去掉指定元素后的新数组或原数组
 	 * @throws IllegalArgumentException 参数对象不为数组对象
@@ -3199,8 +3224,8 @@ public class ArrayUtil {
 	/**
 	 * 移除数组中指定的元素<br>
 	 * 只会移除匹配到的第一个元素 copy from commons-lang
-	 * 
-	 * @param array 数组对象，可以是对象数组，也可以原始类型数组
+	 *
+	 * @param array   数组对象，可以是对象数组，也可以原始类型数组
 	 * @param element 要移除的元素
 	 * @return 去掉指定元素后的新数组或原数组
 	 * @throws IllegalArgumentException 参数对象不为数组对象
@@ -3213,8 +3238,8 @@ public class ArrayUtil {
 	/**
 	 * 移除数组中指定的元素<br>
 	 * 只会移除匹配到的第一个元素 copy from commons-lang
-	 * 
-	 * @param array 数组对象，可以是对象数组，也可以原始类型数组
+	 *
+	 * @param array   数组对象，可以是对象数组，也可以原始类型数组
 	 * @param element 要移除的元素
 	 * @return 去掉指定元素后的新数组或原数组
 	 * @throws IllegalArgumentException 参数对象不为数组对象
@@ -3227,8 +3252,8 @@ public class ArrayUtil {
 	/**
 	 * 移除数组中指定的元素<br>
 	 * 只会移除匹配到的第一个元素 copy from commons-lang
-	 * 
-	 * @param array 数组对象，可以是对象数组，也可以原始类型数组
+	 *
+	 * @param array   数组对象，可以是对象数组，也可以原始类型数组
 	 * @param element 要移除的元素
 	 * @return 去掉指定元素后的新数组或原数组
 	 * @throws IllegalArgumentException 参数对象不为数组对象
@@ -3241,8 +3266,8 @@ public class ArrayUtil {
 	/**
 	 * 移除数组中指定的元素<br>
 	 * 只会移除匹配到的第一个元素 copy from commons-lang
-	 * 
-	 * @param array 数组对象，可以是对象数组，也可以原始类型数组
+	 *
+	 * @param array   数组对象，可以是对象数组，也可以原始类型数组
 	 * @param element 要移除的元素
 	 * @return 去掉指定元素后的新数组或原数组
 	 * @throws IllegalArgumentException 参数对象不为数组对象
@@ -3255,8 +3280,8 @@ public class ArrayUtil {
 	/**
 	 * 移除数组中指定的元素<br>
 	 * 只会移除匹配到的第一个元素 copy from commons-lang
-	 * 
-	 * @param array 数组对象，可以是对象数组，也可以原始类型数组
+	 *
+	 * @param array   数组对象，可以是对象数组，也可以原始类型数组
 	 * @param element 要移除的元素
 	 * @return 去掉指定元素后的新数组或原数组
 	 * @throws IllegalArgumentException 参数对象不为数组对象
@@ -3269,8 +3294,8 @@ public class ArrayUtil {
 	/**
 	 * 移除数组中指定的元素<br>
 	 * 只会移除匹配到的第一个元素 copy from commons-lang
-	 * 
-	 * @param array 数组对象，可以是对象数组，也可以原始类型数组
+	 *
+	 * @param array   数组对象，可以是对象数组，也可以原始类型数组
 	 * @param element 要移除的元素
 	 * @return 去掉指定元素后的新数组或原数组
 	 * @throws IllegalArgumentException 参数对象不为数组对象
@@ -3284,11 +3309,11 @@ public class ArrayUtil {
 
 	/**
 	 * 反转数组，会变更原数组
-	 * 
-	 * @param <T> 数组元素类型
-	 * @param array 数组，会变更
+	 *
+	 * @param <T>                 数组元素类型
+	 * @param array               数组，会变更
 	 * @param startIndexInclusive 开始位置（包含）
-	 * @param endIndexExclusive 结束位置（不包含）
+	 * @param endIndexExclusive   结束位置（不包含）
 	 * @return 变更后的原数组
 	 * @since 3.0.9
 	 */
@@ -3311,8 +3336,8 @@ public class ArrayUtil {
 
 	/**
 	 * 反转数组，会变更原数组
-	 * 
-	 * @param <T> 数组元素类型
+	 *
+	 * @param <T>   数组元素类型
 	 * @param array 数组，会变更
 	 * @return 变更后的原数组
 	 * @since 3.0.9
@@ -3323,10 +3348,10 @@ public class ArrayUtil {
 
 	/**
 	 * 反转数组，会变更原数组
-	 * 
-	 * @param array 数组，会变更
+	 *
+	 * @param array               数组，会变更
 	 * @param startIndexInclusive 其实位置（包含）
-	 * @param endIndexExclusive 结束位置（不包含）
+	 * @param endIndexExclusive   结束位置（不包含）
 	 * @return 变更后的原数组
 	 * @since 3.0.9
 	 */
@@ -3349,7 +3374,7 @@ public class ArrayUtil {
 
 	/**
 	 * 反转数组，会变更原数组
-	 * 
+	 *
 	 * @param array 数组，会变更
 	 * @return 变更后的原数组
 	 * @since 3.0.9
@@ -3360,10 +3385,10 @@ public class ArrayUtil {
 
 	/**
 	 * 反转数组，会变更原数组
-	 * 
-	 * @param array 数组，会变更
+	 *
+	 * @param array               数组，会变更
 	 * @param startIndexInclusive 其实位置（包含）
-	 * @param endIndexExclusive 结束位置（不包含）
+	 * @param endIndexExclusive   结束位置（不包含）
 	 * @return 变更后的原数组
 	 * @since 3.0.9
 	 */
@@ -3386,7 +3411,7 @@ public class ArrayUtil {
 
 	/**
 	 * 反转数组，会变更原数组
-	 * 
+	 *
 	 * @param array 数组，会变更
 	 * @return 变更后的原数组
 	 * @since 3.0.9
@@ -3397,10 +3422,10 @@ public class ArrayUtil {
 
 	/**
 	 * 反转数组，会变更原数组
-	 * 
-	 * @param array 数组，会变更
+	 *
+	 * @param array               数组，会变更
 	 * @param startIndexInclusive 其实位置（包含）
-	 * @param endIndexExclusive 结束位置（不包含）
+	 * @param endIndexExclusive   结束位置（不包含）
 	 * @return 变更后的原数组
 	 * @since 3.0.9
 	 */
@@ -3423,7 +3448,7 @@ public class ArrayUtil {
 
 	/**
 	 * 反转数组，会变更原数组
-	 * 
+	 *
 	 * @param array 数组，会变更
 	 * @return 变更后的原数组
 	 * @since 3.0.9
@@ -3434,10 +3459,10 @@ public class ArrayUtil {
 
 	/**
 	 * 反转数组，会变更原数组
-	 * 
-	 * @param array 数组，会变更
+	 *
+	 * @param array               数组，会变更
 	 * @param startIndexInclusive 其实位置（包含）
-	 * @param endIndexExclusive 结束位置（不包含）
+	 * @param endIndexExclusive   结束位置（不包含）
 	 * @return 变更后的原数组
 	 * @since 3.0.9
 	 */
@@ -3460,7 +3485,7 @@ public class ArrayUtil {
 
 	/**
 	 * 反转数组，会变更原数组
-	 * 
+	 *
 	 * @param array 数组，会变更
 	 * @return 变更后的原数组
 	 * @since 3.0.9
@@ -3471,10 +3496,10 @@ public class ArrayUtil {
 
 	/**
 	 * 反转数组，会变更原数组
-	 * 
-	 * @param array 数组，会变更
+	 *
+	 * @param array               数组，会变更
 	 * @param startIndexInclusive 其实位置（包含）
-	 * @param endIndexExclusive 结束位置（不包含）
+	 * @param endIndexExclusive   结束位置（不包含）
 	 * @return 变更后的原数组
 	 * @since 3.0.9
 	 */
@@ -3497,7 +3522,7 @@ public class ArrayUtil {
 
 	/**
 	 * 反转数组，会变更原数组
-	 * 
+	 *
 	 * @param array 数组，会变更
 	 * @return 变更后的原数组
 	 * @since 3.0.9
@@ -3508,10 +3533,10 @@ public class ArrayUtil {
 
 	/**
 	 * 反转数组，会变更原数组
-	 * 
-	 * @param array 数组，会变更
+	 *
+	 * @param array               数组，会变更
 	 * @param startIndexInclusive 其实位置（包含）
-	 * @param endIndexExclusive 结束位置（不包含）
+	 * @param endIndexExclusive   结束位置（不包含）
 	 * @return 变更后的原数组
 	 * @since 3.0.9
 	 */
@@ -3534,7 +3559,7 @@ public class ArrayUtil {
 
 	/**
 	 * 反转数组，会变更原数组
-	 * 
+	 *
 	 * @param array 数组，会变更
 	 * @return 变更后的原数组
 	 * @since 3.0.9
@@ -3545,10 +3570,10 @@ public class ArrayUtil {
 
 	/**
 	 * 反转数组，会变更原数组
-	 * 
-	 * @param array 数组，会变更
+	 *
+	 * @param array               数组，会变更
 	 * @param startIndexInclusive 其实位置（包含）
-	 * @param endIndexExclusive 结束位置（不包含）
+	 * @param endIndexExclusive   结束位置（不包含）
 	 * @return 变更后的原数组
 	 * @since 3.0.9
 	 */
@@ -3571,7 +3596,7 @@ public class ArrayUtil {
 
 	/**
 	 * 反转数组，会变更原数组
-	 * 
+	 *
 	 * @param array 数组，会变更
 	 * @return 变更后的原数组
 	 * @since 3.0.9
@@ -3582,10 +3607,10 @@ public class ArrayUtil {
 
 	/**
 	 * 反转数组，会变更原数组
-	 * 
-	 * @param array 数组，会变更
+	 *
+	 * @param array               数组，会变更
 	 * @param startIndexInclusive 其实位置（包含）
-	 * @param endIndexExclusive 结束位置（不包含）
+	 * @param endIndexExclusive   结束位置（不包含）
 	 * @return 变更后的原数组
 	 * @since 3.0.9
 	 */
@@ -3608,7 +3633,7 @@ public class ArrayUtil {
 
 	/**
 	 * 反转数组，会变更原数组
-	 * 
+	 *
 	 * @param array 数组，会变更
 	 * @return 变更后的原数组
 	 * @since 3.0.9
@@ -3618,10 +3643,11 @@ public class ArrayUtil {
 	}
 
 	// ------------------------------------------------------------------------------------------------------------ min and max
+
 	/**
 	 * 取最小值
 	 *
-	 * @param <T> 元素类型
+	 * @param <T>         元素类型
 	 * @param numberArray 数字数组
 	 * @return 最小值
 	 * @since 3.0.9
@@ -3632,10 +3658,10 @@ public class ArrayUtil {
 
 	/**
 	 * 取最小值
-	 * 
-	 * @param <T> 元素类型
+	 *
+	 * @param <T>         元素类型
 	 * @param numberArray 数字数组
-	 * @param comparator 比较器，null按照默认比较
+	 * @param comparator  比较器，null按照默认比较
 	 * @return 最小值
 	 * @since 5.3.4
 	 */
@@ -3654,7 +3680,7 @@ public class ArrayUtil {
 
 	/**
 	 * 取最小值
-	 * 
+	 *
 	 * @param numberArray 数字数组
 	 * @return 最小值
 	 * @since 3.0.9
@@ -3674,7 +3700,7 @@ public class ArrayUtil {
 
 	/**
 	 * 取最小值
-	 * 
+	 *
 	 * @param numberArray 数字数组
 	 * @return 最小值
 	 * @since 3.0.9
@@ -3694,7 +3720,7 @@ public class ArrayUtil {
 
 	/**
 	 * 取最小值
-	 * 
+	 *
 	 * @param numberArray 数字数组
 	 * @return 最小值
 	 * @since 3.0.9
@@ -3714,7 +3740,7 @@ public class ArrayUtil {
 
 	/**
 	 * 取最小值
-	 * 
+	 *
 	 * @param numberArray 数字数组
 	 * @return 最小值
 	 * @since 3.0.9
@@ -3734,7 +3760,7 @@ public class ArrayUtil {
 
 	/**
 	 * 取最小值
-	 * 
+	 *
 	 * @param numberArray 数字数组
 	 * @return 最小值
 	 * @since 3.0.9
@@ -3754,7 +3780,7 @@ public class ArrayUtil {
 
 	/**
 	 * 取最小值
-	 * 
+	 *
 	 * @param numberArray 数字数组
 	 * @return 最小值
 	 * @since 3.0.9
@@ -3774,7 +3800,7 @@ public class ArrayUtil {
 
 	/**
 	 * 取最小值
-	 * 
+	 *
 	 * @param numberArray 数字数组
 	 * @return 最小值
 	 * @since 3.0.9
@@ -3795,7 +3821,7 @@ public class ArrayUtil {
 	/**
 	 * 取最大值
 	 *
-	 * @param <T> 元素类型
+	 * @param <T>         元素类型
 	 * @param numberArray 数字数组
 	 * @return 最大值
 	 * @since 3.0.9
@@ -3806,10 +3832,10 @@ public class ArrayUtil {
 
 	/**
 	 * 取最大值
-	 * 
-	 * @param <T> 元素类型
+	 *
+	 * @param <T>         元素类型
 	 * @param numberArray 数字数组
-	 * @param comparator 比较器，null表示默认比较器
+	 * @param comparator  比较器，null表示默认比较器
 	 * @return 最大值
 	 * @since 5.3.4
 	 */
@@ -3828,7 +3854,7 @@ public class ArrayUtil {
 
 	/**
 	 * 取最大值
-	 * 
+	 *
 	 * @param numberArray 数字数组
 	 * @return 最大值
 	 * @since 3.0.9
@@ -3848,7 +3874,7 @@ public class ArrayUtil {
 
 	/**
 	 * 取最大值
-	 * 
+	 *
 	 * @param numberArray 数字数组
 	 * @return 最大值
 	 * @since 3.0.9
@@ -3868,7 +3894,7 @@ public class ArrayUtil {
 
 	/**
 	 * 取最大值
-	 * 
+	 *
 	 * @param numberArray 数字数组
 	 * @return 最大值
 	 * @since 3.0.9
@@ -3888,7 +3914,7 @@ public class ArrayUtil {
 
 	/**
 	 * 取最大值
-	 * 
+	 *
 	 * @param numberArray 数字数组
 	 * @return 最大值
 	 * @since 3.0.9
@@ -3908,7 +3934,7 @@ public class ArrayUtil {
 
 	/**
 	 * 取最大值
-	 * 
+	 *
 	 * @param numberArray 数字数组
 	 * @return 最大值
 	 * @since 3.0.9
@@ -3928,7 +3954,7 @@ public class ArrayUtil {
 
 	/**
 	 * 取最大值
-	 * 
+	 *
 	 * @param numberArray 数字数组
 	 * @return 最大值
 	 * @since 3.0.9
@@ -3948,7 +3974,7 @@ public class ArrayUtil {
 
 	/**
 	 * 取最大值
-	 * 
+	 *
 	 * @param numberArray 数字数组
 	 * @return 最大值
 	 * @since 3.0.9
@@ -3968,8 +3994,8 @@ public class ArrayUtil {
 
 	/**
 	 * 交换数组中两个位置的值
-	 * 
-	 * @param array 数组
+	 *
+	 * @param array  数组
 	 * @param index1 位置1
 	 * @param index2 位置2
 	 * @return 交换后的数组，与传入数组为同一对象
@@ -3987,8 +4013,8 @@ public class ArrayUtil {
 
 	/**
 	 * 交换数组中两个位置的值
-	 * 
-	 * @param array 数组
+	 *
+	 * @param array  数组
 	 * @param index1 位置1
 	 * @param index2 位置2
 	 * @return 交换后的数组，与传入数组为同一对象
@@ -4006,8 +4032,8 @@ public class ArrayUtil {
 
 	/**
 	 * 交换数组中两个位置的值
-	 * 
-	 * @param array 数组
+	 *
+	 * @param array  数组
 	 * @param index1 位置1
 	 * @param index2 位置2
 	 * @return 交换后的数组，与传入数组为同一对象
@@ -4025,8 +4051,8 @@ public class ArrayUtil {
 
 	/**
 	 * 交换数组中两个位置的值
-	 * 
-	 * @param array 数组
+	 *
+	 * @param array  数组
 	 * @param index1 位置1
 	 * @param index2 位置2
 	 * @return 交换后的数组，与传入数组为同一对象
@@ -4044,8 +4070,8 @@ public class ArrayUtil {
 
 	/**
 	 * 交换数组中两个位置的值
-	 * 
-	 * @param array 数组
+	 *
+	 * @param array  数组
 	 * @param index1 位置1
 	 * @param index2 位置2
 	 * @return 交换后的数组，与传入数组为同一对象
@@ -4063,8 +4089,8 @@ public class ArrayUtil {
 
 	/**
 	 * 交换数组中两个位置的值
-	 * 
-	 * @param array 数组
+	 *
+	 * @param array  数组
 	 * @param index1 位置1
 	 * @param index2 位置2
 	 * @return 交换后的数组，与传入数组为同一对象
@@ -4082,8 +4108,8 @@ public class ArrayUtil {
 
 	/**
 	 * 交换数组中两个位置的值
-	 * 
-	 * @param array 数组
+	 *
+	 * @param array  数组
 	 * @param index1 位置1
 	 * @param index2 位置2
 	 * @return 交换后的数组，与传入数组为同一对象
@@ -4101,8 +4127,8 @@ public class ArrayUtil {
 
 	/**
 	 * 交换数组中两个位置的值
-	 * 
-	 * @param array 数组
+	 *
+	 * @param array  数组
 	 * @param index1 位置1
 	 * @param index2 位置2
 	 * @return 交换后的数组，与传入数组为同一对象
@@ -4120,9 +4146,9 @@ public class ArrayUtil {
 
 	/**
 	 * 交换数组中两个位置的值
-	 * 
-	 * @param <T> 元素类型
-	 * @param array 数组
+	 *
+	 * @param <T>    元素类型
+	 * @param array  数组
 	 * @param index1 位置1
 	 * @param index2 位置2
 	 * @return 交换后的数组，与传入数组为同一对象
@@ -4140,8 +4166,8 @@ public class ArrayUtil {
 
 	/**
 	 * 交换数组中两个位置的值
-	 * 
-	 * @param array 数组对象
+	 *
+	 * @param array  数组对象
 	 * @param index1 位置1
 	 * @param index2 位置2
 	 * @return 交换后的数组，与传入数组为同一对象
@@ -4156,7 +4182,7 @@ public class ArrayUtil {
 		Array.set(array, index2, tmp);
 		return array;
 	}
-	
+
 	/**
 	 * 计算{@code null}或空元素对象的个数，通过{@link ObjectUtil#isEmpty(Object)} 判断元素
 	 *
@@ -4175,7 +4201,7 @@ public class ArrayUtil {
 		}
 		return count;
 	}
-	
+
 	/**
 	 * 是否存在{@code null}或空对象，通过{@link ObjectUtil#isEmpty(Object)} 判断元素
 	 *
@@ -4193,7 +4219,7 @@ public class ArrayUtil {
 		}
 		return false;
 	}
-	
+
 	/**
 	 * 是否存都为{@code null}或空对象，通过{@link ObjectUtil#isEmpty(Object)} 判断元素
 	 *
@@ -4215,23 +4241,37 @@ public class ArrayUtil {
 	public static boolean isAllNotEmpty(Object... args) {
 		return false == hasEmpty(args);
 	}
-	
+
 	/**
 	 * 去重数组中的元素，去重后生成新的数组，原数组不变<br>
 	 * 此方法通过{@link LinkedHashSet} 去重
 	 *
-	 * @param <T> 数组元素类型
+	 * @param <T>   数组元素类型
 	 * @param array 数组
 	 * @return 去重后的数组
 	 */
 	@SuppressWarnings("unchecked")
 	public static <T> T[] distinct(T[] array) {
-		if(isEmpty(array)) {
+		if (isEmpty(array)) {
 			return array;
 		}
-		
+
 		final Set<T> set = new LinkedHashSet<>(array.length, 1);
 		Collections.addAll(set, array);
-		return toArray(set, (Class<T>)getComponentType(array));
+		return toArray(set, (Class<T>) getComponentType(array));
+	}
+
+
+	/**
+	 * 多个字段是否全部不为null
+	 *
+	 * @param <T>   数组元素类型
+	 * @param array 被检查的数组
+	 * @return 多个字段是否全部不为null
+	 * @since 5.4.0
+	 */
+	@SuppressWarnings("unchecked")
+	public static <T> boolean isAllNotNull(T... array) {
+		return false == hasNull(array);
 	}
 }

@@ -482,7 +482,7 @@ public class DateUtil extends CalendarUtil {
 	 * @return 格式化后的字符串
 	 */
 	public static String formatLocalDateTime(LocalDateTime localDateTime) {
-		return format(localDateTime, DatePattern.NORM_DATETIME_PATTERN);
+		return LocalDateTimeUtil.formatNormal(localDateTime);
 	}
 
 	/**
@@ -720,6 +720,21 @@ public class DateUtil extends CalendarUtil {
 	 */
 	public static DateTime parse(CharSequence dateStr, String format, Locale locale) {
 		return new DateTime(dateStr, new SimpleDateFormat(format, locale));
+	}
+
+	/**
+	 * 通过给定的日期格式解析日期时间字符串。<br>
+	 * 传入的日期格式会逐个尝试，直到解析成功，返回{@link DateTime}对象，否则抛出{@link DateException}异常。
+	 *
+	 * @param str           日期时间字符串，非空
+	 * @param parsePatterns 需要尝试的日期时间格式数组，非空, 见SimpleDateFormat
+	 * @return 解析后的Date
+	 * @throws IllegalArgumentException if the date string or pattern array is null
+	 * @throws DateException            if none of the date patterns were suitable
+	 * @since 5.3.11
+	 */
+	public static DateTime parse(String str, String... parsePatterns) throws DateException {
+		return new DateTime(CalendarUtil.parseByPatterns(str, parsePatterns));
 	}
 
 	/**
@@ -1027,6 +1042,18 @@ public class DateUtil extends CalendarUtil {
 	}
 
 	/**
+	 * 获取某周的开始时间
+	 *
+	 * @param date               日期
+	 * @param isMondayAsFirstDay 是否周一做为一周的第一天（false表示周日做为第一天）
+	 * @return {@link DateTime}
+	 * @since 5.4.0
+	 */
+	public static DateTime beginOfWeek(Date date, boolean isMondayAsFirstDay) {
+		return new DateTime(beginOfWeek(calendar(date), isMondayAsFirstDay));
+	}
+
+	/**
 	 * 获取某周的结束时间，周日定为一周的结束
 	 *
 	 * @param date 日期
@@ -1034,6 +1061,18 @@ public class DateUtil extends CalendarUtil {
 	 */
 	public static DateTime endOfWeek(Date date) {
 		return new DateTime(endOfWeek(calendar(date)));
+	}
+
+	/**
+	 * 获取某周的结束时间
+	 *
+	 * @param date              日期
+	 * @param isSundayAsLastDay 是否周日做为一周的最后一天（false表示周六做为最后一天）
+	 * @return {@link DateTime}
+	 * @since 5.4.0
+	 */
+	public static DateTime endOfWeek(Date date, boolean isSundayAsLastDay) {
+		return new DateTime(endOfWeek(calendar(date), isSundayAsLastDay));
 	}
 
 	/**
@@ -1429,7 +1468,8 @@ public class DateUtil extends CalendarUtil {
 	}
 
 	/**
-	 * 是否为相同时间
+	 * 是否为相同时间<br>
+	 * 此方法比较两个日期的时间戳是否相同
 	 *
 	 * @param date1 日期1
 	 * @param date2 日期2
@@ -1452,8 +1492,24 @@ public class DateUtil extends CalendarUtil {
 		if (date1 == null || date2 == null) {
 			throw new IllegalArgumentException("The date must not be null");
 		}
-		return isSameDay(calendar(date1), calendar(date2));
+		return CalendarUtil.isSameDay(calendar(date1), calendar(date2));
 	}
+
+	/**
+	 * 比较两个日期是否为同一月
+	 *
+	 * @param date1 日期1
+	 * @param date2 日期2
+	 * @return 是否为同一月
+	 * @since 5.4.1
+	 */
+	public static boolean isSameMonth(final Date date1, final Date date2) {
+		if (date1 == null || date2 == null) {
+			throw new IllegalArgumentException("The date must not be null");
+		}
+		return CalendarUtil.isSameMonth(calendar(date1), calendar(date2));
+	}
+
 
 	/**
 	 * 计时，常用于记录某段代码的执行时间，单位：纳秒

@@ -7,6 +7,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -30,7 +31,7 @@ public class ThreadUtil {
 	 * @param corePoolSize 同时执行的线程数大小
 	 * @return ExecutorService
 	 */
-	public static ExecutorService newExecutor(int corePoolSize) {
+		public static ExecutorService newExecutor(int corePoolSize) {
 		ExecutorBuilder builder = ExecutorBuilder.create();
 		if (corePoolSize > 0) {
 			builder.setCorePoolSize(corePoolSize);
@@ -84,6 +85,24 @@ public class ThreadUtil {
 		return ExecutorBuilder.create()
 				.setCorePoolSize(corePoolSize)
 				.setMaxPoolSize(maximumPoolSize)
+				.build();
+	}
+
+	/**
+	 * 获得一个新的线程池，并指定最大任务队列大小<br>
+	 * 如果maximumPoolSize &gt;= corePoolSize，在没有新任务加入的情况下，多出的线程将最多保留60s
+	 *
+	 * @param corePoolSize     初始线程池大小
+	 * @param maximumPoolSize  最大线程池大小
+	 * @param maximumQueueSize 最大任务队列大小
+	 * @return {@link ThreadPoolExecutor}
+	 * @since 5.4.1
+	 */
+	public static ExecutorService newExecutor(int corePoolSize, int maximumPoolSize, int maximumQueueSize) {
+		return ExecutorBuilder.create()
+				.setCorePoolSize(corePoolSize)
+				.setMaxPoolSize(maximumPoolSize)
+				.setWorkQueue(new LinkedBlockingQueue<>(maximumQueueSize))
 				.build();
 	}
 

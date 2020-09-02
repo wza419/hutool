@@ -99,7 +99,7 @@ public class DateUtilTest {
 	}
 
 	@Test
-	public void beginAndWeedTest() {
+	public void beginOfWeekTest() {
 		String dateStr = "2017-03-01 22:33:23";
 		DateTime date = DateUtil.parse(dateStr);
 		Objects.requireNonNull(date).setFirstDayOfWeek(Week.MONDAY);
@@ -121,7 +121,7 @@ public class DateUtilTest {
 	}
 
 	@Test
-	public void beginAndWeedTest2() {
+	public void beginOfWeekTest2() {
 		String beginStr = "2020-03-11";
 		DateTime date = DateUtil.parseDate(beginStr);
 		Calendar calendar = date.toCalendar();
@@ -389,6 +389,14 @@ public class DateUtilTest {
 		String str = "2019-06-01T19:45:43.000 +0800";
 		DateTime dateTime = DateUtil.parse(str, "yyyy-MM-dd'T'HH:mm:ss.SSS Z");
 		Assert.assertEquals("2019-06-01 19:45:43", dateTime.toString());
+	}
+
+	@Test
+	public void parseTest8() {
+		String str = "2020-06-28T02:14:13.000Z";
+		DateTime dateTime = DateUtil.parse(str);
+		assert dateTime != null;
+		Assert.assertEquals("2020-06-28 02:14:13", dateTime.toString());
 	}
 
 	@Test

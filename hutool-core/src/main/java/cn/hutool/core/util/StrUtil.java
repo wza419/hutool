@@ -3,6 +3,7 @@ package cn.hutool.core.util;
 import cn.hutool.core.comparator.VersionComparator;
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.lang.Assert;
+import cn.hutool.core.lang.Filter;
 import cn.hutool.core.lang.Matcher;
 import cn.hutool.core.lang.func.Func1;
 import cn.hutool.core.text.StrBuilder;
@@ -969,7 +970,7 @@ public class StrUtil {
 	 * 移除字符串中所有给定字符串，当某个字符串出现多次，则全部移除<br>
 	 * 例：removeAny("aa-bb-cc-dd", "a", "b") =》 --cc-dd
 	 *
-	 * @param str         字符串
+	 * @param str          字符串
 	 * @param strsToRemove 被移除的字符串
 	 * @return 移除后的字符串
 	 * @since 5.3.8
@@ -1332,20 +1333,7 @@ public class StrUtil {
 	 * @return 清理后的字符串
 	 */
 	public static String cleanBlank(CharSequence str) {
-		if (str == null) {
-			return null;
-		}
-
-		int len = str.length();
-		final StringBuilder sb = new StringBuilder(len);
-		char c;
-		for (int i = 0; i < len; i++) {
-			c = str.charAt(i);
-			if (false == CharUtil.isBlankChar(c)) {
-				sb.append(c);
-			}
-		}
-		return sb.toString();
+		return filter(str, c -> false == CharUtil.isBlankChar(c));
 	}
 
 	// ------------------------------------------------------------------------------ Split
@@ -2419,7 +2407,11 @@ public class StrUtil {
 
 	/**
 	 * 将对象转为字符串<br>
-	 * 1、Byte数组和ByteBuffer会被转换为对应字符串的数组 2、对象数组会调用Arrays.toString方法
+	 *
+	 * <pre>
+	 * 1、Byte数组和ByteBuffer会被转换为对应字符串的数组
+	 * 2、对象数组会调用Arrays.toString方法
+	 * </pre>
 	 *
 	 * @param obj 对象
 	 * @return 字符串
@@ -2739,14 +2731,14 @@ public class StrUtil {
 	}
 
 	/**
-	 * 包装多个字符串
+	 * 使用单个字符包装多个字符串
 	 *
 	 * @param prefixAndSuffix 前缀和后缀
 	 * @param strs            多个字符串
 	 * @return 包装的字符串数组
-	 * @since 4.0.7
+	 * @since 5.4.1
 	 */
-	public static String[] wrapAll(CharSequence prefixAndSuffix, CharSequence... strs) {
+	public static String[] wrapAllWithPair(CharSequence prefixAndSuffix, CharSequence... strs) {
 		return wrapAll(prefixAndSuffix, prefixAndSuffix, strs);
 	}
 
@@ -2800,14 +2792,14 @@ public class StrUtil {
 	}
 
 	/**
-	 * 包装多个字符串，如果已经包装，则不再包装
+	 * 使用成对的字符包装多个字符串，如果已经包装，则不再包装
 	 *
 	 * @param prefixAndSuffix 前缀和后缀
 	 * @param strs            多个字符串
 	 * @return 包装的字符串数组
-	 * @since 4.0.7
+	 * @since 5.4.1
 	 */
-	public static String[] wrapAllIfMissing(CharSequence prefixAndSuffix, CharSequence... strs) {
+	public static String[] wrapAllWithPairIfMissing(CharSequence prefixAndSuffix, CharSequence... strs) {
 		return wrapAllIfMissing(prefixAndSuffix, prefixAndSuffix, strs);
 	}
 
@@ -3435,7 +3427,7 @@ public class StrUtil {
 	 * @param start      起始位置，如果小于0，从0开始查找
 	 * @return 位置
 	 */
-	public static int indexOf(final CharSequence str, char searchChar, int start) {
+	public static int indexOf(CharSequence str, char searchChar, int start) {
 		if (str instanceof String) {
 			return ((String) str).indexOf(searchChar, start);
 		} else {
@@ -3453,6 +3445,9 @@ public class StrUtil {
 	 * @return 位置
 	 */
 	public static int indexOf(final CharSequence str, char searchChar, int start, int end) {
+		if(isEmpty(str)){
+			return INDEX_NOT_FOUND;
+		}
 		final int len = str.length();
 		if (start < 0 || start > len) {
 			start = 0;
@@ -3465,7 +3460,7 @@ public class StrUtil {
 				return i;
 			}
 		}
-		return -1;
+		return INDEX_NOT_FOUND;
 	}
 
 	/**
@@ -4319,5 +4314,71 @@ public class StrUtil {
 			}
 		}
 		return new String(buffer);
+	}
+
+	/**
+	 * 过滤字符串
+	 *
+	 * @param str    字符串
+	 * @param filter 过滤器
+	 * @return 过滤后的字符串
+	 * @since 5.4.0
+	 */
+	public static String filter(CharSequence str, final Filter<Character> filter) {
+		if (str == null || filter == null) {
+			return str(str);
+		}
+
+		int len = str.length();
+		final StringBuilder sb = new StringBuilder(len);
+		char c;
+		for (int i = 0; i < len; i++) {
+			c = str.charAt(i);
+			if (filter.accept(c)) {
+				sb.append(c);
+			}
+		}
+		return sb.toString();
+	}
+
+	/**
+	 * 返回第一个非{@code null} 元素
+	 *
+	 * @param strs 多个元素
+	 * @param <T>  元素类型
+	 * @return 第一个非空元素，如果给定的数组为空或者都为空，返回{@code null}
+	 * @since 5.4.1
+	 */
+	@SuppressWarnings("unchecked")
+	public <T extends CharSequence> T firstNonNull(T... strs) {
+		return ArrayUtil.firstNonNull(strs);
+	}
+
+	/**
+	 * 返回第一个非empty 元素
+	 *
+	 * @param strs 多个元素
+	 * @param <T>  元素类型
+	 * @return 第一个非空元素，如果给定的数组为空或者都为空，返回{@code null}
+	 * @since 5.4.1
+	 * @see #isNotEmpty(CharSequence)
+	 */
+	@SuppressWarnings("unchecked")
+	public <T extends CharSequence> T firstNonEmpty(T... strs) {
+			return ArrayUtil.firstMatch(StrUtil::isNotEmpty, strs);
+	}
+
+	/**
+	 * 返回第一个非blank 元素
+	 *
+	 * @param strs 多个元素
+	 * @param <T>  元素类型
+	 * @return 第一个非空元素，如果给定的数组为空或者都为空，返回{@code null}
+	 * @since 5.4.1
+	 * @see #isNotBlank(CharSequence)
+	 */
+	@SuppressWarnings("unchecked")
+	public <T extends CharSequence> T firstNonBlank(T... strs) {
+		return ArrayUtil.firstMatch(StrUtil::isNotBlank, strs);
 	}
 }

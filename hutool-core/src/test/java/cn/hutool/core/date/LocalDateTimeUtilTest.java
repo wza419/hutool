@@ -54,12 +54,6 @@ public class LocalDateTimeUtilTest {
 	}
 
 	@Test
-	public void parseTest5() {
-		final LocalDateTime localDateTime = LocalDateTimeUtil.parse("2020-01-23T12:23:56");
-		Assert.assertEquals("2020-01-23T12:23:56", localDateTime.toString());
-	}
-
-	@Test
 	public void parseDateTest() {
 		LocalDate localDate = LocalDateTimeUtil.parseDate("2020-01-23");
 		Assert.assertEquals("2020-01-23", localDate.toString());
@@ -74,14 +68,20 @@ public class LocalDateTimeUtilTest {
 		String format = LocalDateTimeUtil.format(localDateTime, DatePattern.NORM_DATETIME_PATTERN);
 		Assert.assertEquals("2020-01-23 12:23:56", format);
 
+		format = LocalDateTimeUtil.formatNormal(localDateTime);
+		Assert.assertEquals("2020-01-23 12:23:56", format);
+
 		format = LocalDateTimeUtil.format(localDateTime, DatePattern.NORM_DATE_PATTERN);
 		Assert.assertEquals("2020-01-23", format);
 	}
 
 	@Test
 	public void formatLocalDateTest() {
-		final LocalDate localDateTime = LocalDate.parse("2020-01-23");
-		String format = LocalDateTimeUtil.format(localDateTime, DatePattern.NORM_DATE_PATTERN);
+		final LocalDate date = LocalDate.parse("2020-01-23");
+		String format = LocalDateTimeUtil.format(date, DatePattern.NORM_DATE_PATTERN);
+		Assert.assertEquals("2020-01-23", format);
+
+		format = LocalDateTimeUtil.formatNormal(date);
 		Assert.assertEquals("2020-01-23", format);
 	}
 
