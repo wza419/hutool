@@ -1,6 +1,6 @@
 package cn.hutool.script;
 
-import cn.hutool.core.lang.SimpleCache;
+import cn.hutool.core.map.WeakConcurrentMap;
 import cn.hutool.core.util.StrUtil;
 
 import javax.script.Bindings;
@@ -20,7 +20,7 @@ import javax.script.ScriptException;
 public class ScriptUtil {
 
 	private static final ScriptEngineManager MANAGER = new ScriptEngineManager();
-	private static final SimpleCache<String, ScriptEngine> CACHE = new SimpleCache<>();
+	private static final WeakConcurrentMap<String, ScriptEngine> CACHE = new WeakConcurrentMap<>();
 
 	/**
 	 * 获得单例的{@link ScriptEngine} 实例
@@ -29,7 +29,7 @@ public class ScriptUtil {
 	 * @return {@link ScriptEngine} 实例
 	 */
 	public static ScriptEngine getScript(String nameOrExtOrMime) {
-		return CACHE.get(nameOrExtOrMime, () -> createScript(nameOrExtOrMime));
+		return CACHE.computeIfAbsent(nameOrExtOrMime, () -> createScript(nameOrExtOrMime));
 	}
 
 	/**
@@ -151,7 +151,12 @@ public class ScriptUtil {
 	}
 
 	/**
-	 * 执行Javascript脚本，返回Invocable
+	 * 执行Javascript脚本，返回Invocable，此方法分为两种情况：
+	 *
+	 * <ol>
+	 *     <li>执行的脚本返回值是可执行的脚本方法</li>
+	 *     <li>脚本为函数库，则ScriptEngine本身为可执行方法</li>
+	 * </ol>
 	 *
 	 * @param script 脚本内容
 	 * @return 执行结果
@@ -159,11 +164,23 @@ public class ScriptUtil {
 	 * @since 5.3.6
 	 */
 	public static Invocable evalInvocable(String script) throws ScriptRuntimeException {
-		return (Invocable) eval(script);
+		final ScriptEngine jsEngine = getJsEngine();
+		final Object eval;
+		try {
+			eval = jsEngine.eval(script);
+		} catch (ScriptException e) {
+			throw new ScriptRuntimeException(e);
+		}
+		if(eval instanceof Invocable){
+			return (Invocable)eval;
+		} else if(jsEngine instanceof Invocable){
+			return (Invocable)jsEngine;
+		}
+		throw new ScriptRuntimeException("Script is not invocable !");
 	}
 
 	/**
-	 * 执行Javascript脚本
+	 * 执行有返回值的Javascript脚本
 	 *
 	 * @param script 脚本内容
 	 * @return 执行结果
@@ -179,7 +196,7 @@ public class ScriptUtil {
 	}
 
 	/**
-	 * 执行脚本
+	 * 执行有返回值的脚本
 	 *
 	 * @param script  脚本内容
 	 * @param context 脚本上下文
@@ -196,7 +213,7 @@ public class ScriptUtil {
 	}
 
 	/**
-	 * 执行脚本
+	 * 执行有返回值的脚本
 	 *
 	 * @param script   脚本内容
 	 * @param bindings 绑定的参数

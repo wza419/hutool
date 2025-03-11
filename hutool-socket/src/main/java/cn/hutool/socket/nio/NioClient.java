@@ -3,6 +3,7 @@ package cn.hutool.socket.nio;
 import cn.hutool.core.io.IORuntimeException;
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.thread.ThreadUtil;
+import cn.hutool.log.Log;
 import cn.hutool.socket.SocketRuntimeException;
 
 import java.io.Closeable;
@@ -21,6 +22,8 @@ import java.util.Iterator;
  * @since 4.4.5
  */
 public class NioClient implements Closeable {
+
+	private static final Log log = Log.get();
 
 	private Selector selector;
 	private SocketChannel channel;
@@ -66,6 +69,7 @@ public class NioClient implements Closeable {
 			//noinspection StatementWithEmptyBody
 			while (false == channel.finishConnect()){}
 		} catch (IOException e) {
+			close();
 			throw new IORuntimeException(e);
 		}
 		return this;
@@ -90,7 +94,7 @@ public class NioClient implements Closeable {
 			try {
 				doListen();
 			} catch (IOException e) {
-				e.printStackTrace();
+				log.error("Listen failed", e);
 			}
 		});
 	}

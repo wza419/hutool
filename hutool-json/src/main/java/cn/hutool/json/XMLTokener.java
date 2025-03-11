@@ -35,13 +35,13 @@ public class XMLTokener extends JSONTokener {
 	/**
 	 * Get the text in the CDATA block.
 	 *
-	 * @return The string up to the <code>]]&gt;</code>.
-	 * @throws JSONException If the <code>]]&gt;</code> is not found.
+	 * @return The string up to the {@code ]]>}.
+	 * @throws JSONException If the {@code ]]>} is not found.
 	 */
 	public String nextCDATA() throws JSONException {
 		char c;
 		int i;
-		StringBuilder sb = new StringBuilder();
+		final StringBuilder sb = new StringBuilder();
 		for (; ; ) {
 			c = next();
 			if (end()) {
@@ -65,7 +65,7 @@ public class XMLTokener extends JSONTokener {
 	 */
 	public Object nextContent() throws JSONException {
 		char c;
-		StringBuilder sb;
+		final StringBuilder sb;
 		do {
 			c = next();
 		} while (Character.isWhitespace(c));
@@ -91,16 +91,17 @@ public class XMLTokener extends JSONTokener {
 	}
 
 	/**
-	 * Return the next entity. These entities are translated to Characters: <code>&amp;  '  &gt;  &lt;  &quot;</code>.
+	 * Return the next entity. These entities are translated to Characters: {@code &  '  >  <  "}.
 	 *
 	 * @param ampersand An ampersand character.
 	 * @return A Character or an entity String if the entity is not recognized.
 	 * @throws JSONException If missing ';' in XML entity.
 	 */
 	public Object nextEntity(char ampersand) throws JSONException {
-		StringBuilder sb = new StringBuilder();
+		final StringBuilder sb = new StringBuilder();
+		char c;
 		for (; ; ) {
-			char c = next();
+			c = next();
 			if (Character.isLetterOrDigit(c) || c == '#') {
 				sb.append(Character.toLowerCase(c));
 			} else if (c == ';') {
@@ -109,15 +110,44 @@ public class XMLTokener extends JSONTokener {
 				throw syntaxError("Missing ';' in XML entity: &" + sb);
 			}
 		}
-		String string = sb.toString();
-		Object object = entity.get(string);
-		return object != null ? object : ampersand + string + ";";
+		return unescapeEntity(sb.toString());
+	}
+
+	/**
+	 * Unescape an XML entity encoding;
+	 *
+	 * @param e entity (only the actual entity value, not the preceding & or ending ;
+	 * @return Unescape str
+	 */
+	static String unescapeEntity(final String e) {
+		// validate
+		if (e == null || e.isEmpty()) {
+			return "";
+		}
+		// if our entity is an encoded unicode point, parse it.
+		if (e.charAt(0) == '#') {
+			final int cp;
+			if (e.charAt(1) == 'x' || e.charAt(1) == 'X') {
+				// hex encoded unicode
+				cp = Integer.parseInt(e.substring(2), 16);
+			} else {
+				// decimal encoded unicode
+				cp = Integer.parseInt(e.substring(1));
+			}
+			return new String(new int[]{cp}, 0, 1);
+		}
+		final Character knownEntity = entity.get(e);
+		if (knownEntity == null) {
+			// we don't know the entity so keep it encoded
+			return '&' + e + ';';
+		}
+		return knownEntity.toString();
 	}
 
 	/**
 	 * Returns the next XML meta token. This is used for skipping over &lt;!...&gt; and &lt;?...?&gt; structures.
 	 *
-	 * @return Syntax characters (<code>&lt; &gt; / = ! ?</code>) are returned as Character, and strings and names are returned as Boolean. We don't care what the values actually are.
+	 * @return Syntax characters ({@code < > / = ! ?}) are returned as Character, and strings and names are returned as Boolean. We don't care what the values actually are.
 	 * @throws JSONException 字符串中属性未关闭或XML结构错误抛出此异常。If a string is not properly closed or if the XML is badly structured.
 	 */
 	public Object nextMeta() throws JSONException {
@@ -177,7 +207,8 @@ public class XMLTokener extends JSONTokener {
 	}
 
 	/**
-	 * Get the next XML Token. These tokens are found inside of angle brackets. It may be one of these characters: <code>/ &gt; = ! ?</code> or it may be a string wrapped in single quotes or double
+	 * Get the next XML Token. These tokens are found inside of angle brackets. <br>
+	 * It may be one of these characters: {@code / > = ! ?} or it may be a string wrapped in single quotes or double
 	 * quotes, or it may be a name.
 	 *
 	 * @return a String or a Character.

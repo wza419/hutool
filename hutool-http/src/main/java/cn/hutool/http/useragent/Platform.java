@@ -1,9 +1,9 @@
 package cn.hutool.http.useragent;
 
+import cn.hutool.core.collection.CollUtil;
+
 import java.util.ArrayList;
 import java.util.List;
-
-import cn.hutool.core.collection.CollUtil;
 
 /**
  * 平台对象
@@ -12,6 +12,7 @@ import cn.hutool.core.collection.CollUtil;
  * @since 4.2.1
  */
 public class Platform extends UserAgentInfo {
+	private static final long serialVersionUID = 1L;
 
 	/**
 	 * 未知
@@ -35,6 +36,11 @@ public class Platform extends UserAgentInfo {
 	 * android
 	 */
 	public static final Platform ANDROID = new Platform("Android", "android");
+
+	/**
+	 * harmony
+	 */
+	public static final Platform HARMONY = new Platform("Harmony", "OpenHarmony");
 	/**
 	 * android
 	 */
@@ -53,11 +59,13 @@ public class Platform extends UserAgentInfo {
 			IPAD, //
 			IPOD, //
 			IPHONE, //
+			new Platform("Android", "XiaoMi|MI\\s+"), //
 			ANDROID, //
 			GOOGLE_TV, //
 			new Platform("htcFlyer", "htc_flyer"), //
 			new Platform("Symbian", "symbian(os)?"), //
-			new Platform("Blackberry", "blackberry") //
+			new Platform("Blackberry", "blackberry"), //
+			HARMONY
 	);
 
 	/**
@@ -109,7 +117,7 @@ public class Platform extends UserAgentInfo {
 	 * @since 5.2.3
 	 */
 	public boolean isIPhoneOrIPod() {
-		return IPHONE.equals(this) || IPOD.equals(this);
+		return this.equals(IPHONE) || this.equals(IPOD);
 	}
 
 	/**
@@ -119,7 +127,7 @@ public class Platform extends UserAgentInfo {
 	 * @since 5.2.3
 	 */
 	public boolean isIPad() {
-		return IPAD.equals(this);
+		return this.equals(IPAD);
 	}
 
 	/**
@@ -139,7 +147,16 @@ public class Platform extends UserAgentInfo {
 	 * @since 5.2.3
 	 */
 	public boolean isAndroid() {
-		return ANDROID.equals(this) || GOOGLE_TV.equals(this);
+		return this.equals(ANDROID) || this.equals(GOOGLE_TV);
+	}
+
+	/**
+	 * 是否为Harmony平台
+	 *
+	 * @return 是否为Harmony平台
+	 */
+	public boolean isHarmony() {
+		return this.equals(HARMONY);
 	}
 
 }

@@ -3,8 +3,11 @@ package cn.hutool.extra.mail;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.map.MapUtil;
+import cn.hutool.core.util.CharUtil;
 import cn.hutool.core.util.StrUtil;
 
+import javax.mail.Authenticator;
+import javax.mail.Session;
 import java.io.File;
 import java.io.InputStream;
 import java.util.Collection;
@@ -342,8 +345,26 @@ public class MailUtil {
 	 * @since 4.6.3
 	 */
 	public static String send(MailAccount mailAccount, Collection<String> tos, Collection<String> ccs, Collection<String> bccs, String subject, String content, Map<String, InputStream> imageMap,
-	                          boolean isHtml, File... files) {
+							  boolean isHtml, File... files) {
 		return send(mailAccount, false, tos, ccs, bccs, subject, content, imageMap, isHtml, files);
+	}
+
+	/**
+	 * 根据配置文件，获取邮件客户端会话
+	 *
+	 * @param mailAccount 邮件账户配置
+	 * @param isSingleton 是否单例（全局共享会话）
+	 * @return {@link Session}
+	 * @since 5.5.7
+	 */
+	public static Session getSession(MailAccount mailAccount, boolean isSingleton) {
+		Authenticator authenticator = null;
+		if (mailAccount.isAuth()) {
+			authenticator = new UserPassAuthenticator(mailAccount.getUser(), mailAccount.getPass());
+		}
+
+		return isSingleton ? Session.getDefaultInstance(mailAccount.getSmtpProps(), authenticator) //
+				: Session.getInstance(mailAccount.getSmtpProps(), authenticator);
 	}
 
 	// ------------------------------------------------------------------------------------------------------------------------ Private method start
@@ -365,7 +386,7 @@ public class MailUtil {
 	 * @since 4.6.3
 	 */
 	private static String send(MailAccount mailAccount, boolean useGlobalSession, Collection<String> tos, Collection<String> ccs, Collection<String> bccs, String subject, String content,
-	                           Map<String, InputStream> imageMap, boolean isHtml, File... files) {
+							   Map<String, InputStream> imageMap, boolean isHtml, File... files) {
 		final Mail mail = Mail.create(mailAccount).setUseGlobalSession(useGlobalSession);
 
 		// 可选抄送人
@@ -407,8 +428,8 @@ public class MailUtil {
 		}
 
 		List<String> result;
-		if (StrUtil.contains(addresses, ',')) {
-			result = StrUtil.splitTrim(addresses, ',');
+		if (StrUtil.contains(addresses, CharUtil.COMMA)) {
+			result = StrUtil.splitTrim(addresses, CharUtil.COMMA);
 		} else if (StrUtil.contains(addresses, ';')) {
 			result = StrUtil.splitTrim(addresses, ';');
 		} else {

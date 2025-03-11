@@ -13,8 +13,6 @@ import javax.net.ssl.SSLSocketFactory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.net.HttpURLConnection;
 import java.net.ProtocolException;
 import java.net.Proxy;
@@ -122,7 +120,12 @@ public class HttpConnection {
 
 			// 增加PATCH方法支持
 			if (Method.PATCH.equals(method)) {
-				allowPatch();
+				try {
+					HttpGlobalConfig.allowPatch();
+				} catch (Exception ignore){
+					// ignore
+					// https://github.com/dromara/hutool/issues/2832
+				}
 			}
 		}
 
@@ -130,9 +133,13 @@ public class HttpConnection {
 		try {
 			this.conn.setRequestMethod(method.toString());
 		} catch (ProtocolException e) {
-			throw new HttpException(e);
+			if(Method.PATCH.equals(method)){
+				// 如果全局设置失效，此处针对单独链接重新设置
+				reflectSetMethod(method);
+			}else{
+				throw new HttpException(e);
+			}
 		}
-
 		return this;
 	}
 
@@ -269,7 +276,10 @@ public class HttpConnection {
 			// Https请求
 			final HttpsURLConnection httpsConn = (HttpsURLConnection) conn;
 			// 验证域
-			httpsConn.setHostnameVerifier(ObjectUtil.defaultIfNull(hostnameVerifier, DefaultSSLInfo.TRUST_ANY_HOSTNAME_VERIFIER));
+			httpsConn.setHostnameVerifier(ObjectUtil.defaultIfNull(hostnameVerifier,
+				// CVE-2022-22885 https://github.com/dromara/hutool/issues/2042
+				// 增加全局变量可选是否不验证host
+				HttpGlobalConfig.isTrustAnyHost() ? DefaultSSLInfo.TRUST_ANY_HOSTNAME_VERIFIER : HttpsURLConnection.getDefaultHostnameVerifier()));
 			httpsConn.setSSLSocketFactory(ObjectUtil.defaultIfNull(ssf, DefaultSSLInfo.DEFAULT_SSF));
 		}
 
@@ -337,6 +347,20 @@ public class HttpConnection {
 	public HttpConnection setCookie(String cookie) {
 		if (cookie != null) {
 			header(Header.COOKIE, cookie, true);
+		}
+		return this;
+	}
+
+	/**
+	 * 设置固定长度的流模式，会设置HTTP请求头中的Content-Length字段，告知服务器整个请求体的精确字节大小。<br>
+	 * 这在上传文件或大数据量时非常有用，因为它允许服务器准确地知道何时接收完所有的请求数据，而不需要依赖于连接的关闭来判断数据传输的结束。
+	 *
+	 * @param contentLength 固定长度
+	 * @return this
+	 */
+	public HttpConnection setFixedLengthStreamingMode(long contentLength){
+		if(contentLength > 0){
+			conn.setFixedLengthStreamingMode(contentLength);
 		}
 		return this;
 	}
@@ -444,9 +468,21 @@ public class HttpConnection {
 			throw new IOException("HttpURLConnection has not been initialized.");
 		}
 
+		final Method method = getMethod();
+
 		// 当有写出需求时，自动打开之
 		this.conn.setDoOutput(true);
-		return this.conn.getOutputStream();
+		final OutputStream out = this.conn.getOutputStream();
+
+		// 解决在Rest请求中，GET请求附带body导致GET请求被强制转换为POST
+		// 在sun.net.www.protocol.http.HttpURLConnection.getOutputStream0方法中，会把GET方法
+		// 修改为POST，而且无法调用setRequestMethod方法修改，因此此处使用反射强制修改字段属性值
+		// https://stackoverflow.com/questions/978061/http-get-with-request-body/983458
+		if(method == Method.GET && method != getMethod()){
+			reflectSetMethod(method);
+		}
+
+		return out;
 	}
 
 	/**
@@ -519,7 +555,7 @@ public class HttpConnection {
 		final URLConnection conn = openConnection();
 		if (false == conn instanceof HttpURLConnection) {
 			// 防止其它协议造成的转换异常
-			throw new HttpException("'{}' is not a http connection, make sure URL is format for http.", conn.getClass().getName());
+			throw new HttpException("'{}' of URL [{}] is not a http connection, make sure URL is format for http.", conn.getClass().getName(), this.url);
 		}
 
 		return (HttpURLConnection) conn;
@@ -536,20 +572,16 @@ public class HttpConnection {
 	}
 
 	/**
-	 * 增加支持的METHOD方法
-	 * see: https://stackoverflow.com/questions/25163131/httpurlconnection-invalid-http-method-patch
-	 *
-	 * @since 5.1.6
+	 * 通过反射设置方法名，首先设置HttpURLConnection本身的方法名，再检查是否为代理类，如果是，设置带路对象的方法名。
+	 * @param method 方法名
 	 */
-	private static void allowPatch() {
-		final Field methodsField = ReflectUtil.getField(HttpURLConnection.class, "methods");
-		if (null != methodsField) {
-			// 去除final修饰
-			ReflectUtil.setFieldValue(methodsField, "modifiers", methodsField.getModifiers() & ~Modifier.FINAL);
-			final String[] methods = {
-					"GET", "POST", "HEAD", "OPTIONS", "PUT", "DELETE", "TRACE", "PATCH"
-			};
-			ReflectUtil.setFieldValue(null, methodsField, methods);
+	private void reflectSetMethod(Method method){
+		ReflectUtil.setFieldValue(this.conn, "method", method.name());
+
+		// HttpsURLConnectionImpl实现中，使用了代理类，需要修改被代理类的method方法
+		final Object delegate = ReflectUtil.getFieldValue(this.conn, "delegate");
+		if(null != delegate){
+			ReflectUtil.setFieldValue(delegate, "method", method.name());
 		}
 	}
 	// --------------------------------------------------------------- Private Method end

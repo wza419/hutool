@@ -2,32 +2,21 @@ package cn.hutool.core.io.file;
 
 import cn.hutool.core.io.IORuntimeException;
 import cn.hutool.core.io.IoUtil;
+import cn.hutool.core.io.file.visitor.CopyVisitor;
+import cn.hutool.core.io.file.visitor.DelVisitor;
+import cn.hutool.core.io.resource.FileResource;
+import cn.hutool.core.io.resource.Resource;
 import cn.hutool.core.lang.Assert;
 import cn.hutool.core.util.CharsetUtil;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileFilter;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.nio.charset.Charset;
-import java.nio.file.CopyOption;
-import java.nio.file.DirectoryStream;
-import java.nio.file.FileVisitOption;
-import java.nio.file.FileVisitResult;
-import java.nio.file.FileVisitor;
-import java.nio.file.Files;
-import java.nio.file.LinkOption;
-import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.StandardCopyOption;
+import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * NIO中Path对象操作封装
@@ -56,17 +45,45 @@ public class PathUtil {
 	 * 如果提供path为文件，直接返回过滤结果
 	 *
 	 * @param path       当前遍历文件或目录
+	 * @param fileFilter 文件过滤规则对象，选择要保留的文件，只对文件有效，不过滤目录，null表示接收全部文件
+	 * @return 文件列表
+	 * @since 5.4.1
+	 */
+	public static List<File> loopFiles(Path path, FileFilter fileFilter) {
+		return loopFiles(path, -1, fileFilter);
+	}
+
+	/**
+	 * 递归遍历目录以及子目录中的所有文件<br>
+	 * 如果提供path为文件，直接返回过滤结果
+	 *
+	 * @param path       当前遍历文件或目录
 	 * @param maxDepth   遍历最大深度，-1表示遍历到没有目录为止
 	 * @param fileFilter 文件过滤规则对象，选择要保留的文件，只对文件有效，不过滤目录，null表示接收全部文件
 	 * @return 文件列表
 	 * @since 5.4.1
 	 */
 	public static List<File> loopFiles(Path path, int maxDepth, FileFilter fileFilter) {
+		return loopFiles(path, maxDepth, false, fileFilter);
+	}
+
+	/**
+	 * 递归遍历目录以及子目录中的所有文件<br>
+	 * 如果提供path为文件，直接返回过滤结果
+	 *
+	 * @param path          当前遍历文件或目录
+	 * @param maxDepth      遍历最大深度，-1表示遍历到没有目录为止
+	 * @param isFollowLinks 是否跟踪软链（快捷方式）
+	 * @param fileFilter    文件过滤规则对象，选择要保留的文件，只对文件有效，不过滤目录，null表示接收全部文件
+	 * @return 文件列表
+	 * @since 5.4.1
+	 */
+	public static List<File> loopFiles(final Path path, final int maxDepth, final boolean isFollowLinks, final FileFilter fileFilter) {
 		final List<File> fileList = new ArrayList<>();
 
-		if (null == path || false == Files.exists(path)) {
+		if (!exists(path, isFollowLinks)) {
 			return fileList;
-		} else if (false == Files.isDirectory(path)) {
+		} else if (!isDirectory(path, isFollowLinks)) {
 			final File file = path.toFile();
 			if (null == fileFilter || fileFilter.accept(file)) {
 				fileList.add(file);
@@ -74,10 +91,10 @@ public class PathUtil {
 			return fileList;
 		}
 
-		walkFiles(path, maxDepth, new SimpleFileVisitor<Path>() {
+		walkFiles(path, maxDepth, isFollowLinks, new SimpleFileVisitor<Path>() {
 
 			@Override
-			public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) {
+			public FileVisitResult visitFile(final Path path, final BasicFileAttributes attrs) {
 				final File file = path.toFile();
 				if (null == fileFilter || fileFilter.accept(file)) {
 					fileList.add(file);
@@ -92,6 +109,18 @@ public class PathUtil {
 	/**
 	 * 遍历指定path下的文件并做处理
 	 *
+	 * @param start   起始路径，必须为目录
+	 * @param visitor {@link FileVisitor} 接口，用于自定义在访问文件时，访问目录前后等节点做的操作
+	 * @see Files#walkFileTree(Path, java.util.Set, int, FileVisitor)
+	 * @since 5.5.2
+	 */
+	public static void walkFiles(Path start, FileVisitor<? super Path> visitor) {
+		walkFiles(start, -1, visitor);
+	}
+
+	/**
+	 * 遍历指定path下的文件并做处理
+	 *
 	 * @param start    起始路径，必须为目录
 	 * @param maxDepth 最大遍历深度，-1表示不限制深度
 	 * @param visitor  {@link FileVisitor} 接口，用于自定义在访问文件时，访问目录前后等节点做的操作
@@ -99,20 +128,34 @@ public class PathUtil {
 	 * @since 4.6.3
 	 */
 	public static void walkFiles(Path start, int maxDepth, FileVisitor<? super Path> visitor) {
+		walkFiles(start, maxDepth, false, visitor);
+	}
+
+	/**
+	 * 遍历指定path下的文件并做处理
+	 *
+	 * @param start         起始路径，必须为目录
+	 * @param maxDepth      最大遍历深度，-1表示不限制深度
+	 * @param visitor       {@link FileVisitor} 接口，用于自定义在访问文件时，访问目录前后等节点做的操作
+	 * @param isFollowLinks 是否追踪到软链对应的真实地址
+	 * @see Files#walkFileTree(Path, java.util.Set, int, FileVisitor)
+	 * @since 5.8.23
+	 */
+	public static void walkFiles(final Path start, int maxDepth, final boolean isFollowLinks, final FileVisitor<? super Path> visitor) {
 		if (maxDepth < 0) {
 			// < 0 表示遍历到最底层
 			maxDepth = Integer.MAX_VALUE;
 		}
 
 		try {
-			Files.walkFileTree(start, EnumSet.noneOf(FileVisitOption.class), maxDepth, visitor);
-		} catch (IOException e) {
+			Files.walkFileTree(start, getFileVisitOption(isFollowLinks), maxDepth, visitor);
+		} catch (final IOException e) {
 			throw new IORuntimeException(e);
 		}
 	}
 
 	/**
-	 * 删除文件或者文件夹<br>
+	 * 删除文件或者文件夹，不追踪软链<br>
 	 * 注意：删除文件夹时不会判断文件夹是否为空，如果不空则递归删除子文件或文件夹<br>
 	 * 某个文件删除失败会终止删除操作
 	 *
@@ -127,27 +170,10 @@ public class PathUtil {
 		}
 
 		try {
-			if (Files.isDirectory(path)) {
-				Files.walkFileTree(path, new SimpleFileVisitor<Path>() {
-
-					@Override
-					public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-						Files.delete(file);
-						return FileVisitResult.CONTINUE;
-					}
-
-					@Override
-					public FileVisitResult postVisitDirectory(Path dir, IOException e) throws IOException {
-						if (e == null) {
-							Files.delete(dir);
-							return FileVisitResult.CONTINUE;
-						} else {
-							throw e;
-						}
-					}
-				});
+			if (isDirectory(path)) {
+				Files.walkFileTree(path, DelVisitor.INSTANCE);
 			} else {
-				Files.delete(path);
+				delFile(path);
 			}
 		} catch (IOException e) {
 			throw new IORuntimeException(e);
@@ -156,12 +182,61 @@ public class PathUtil {
 	}
 
 	/**
-	 * 通过JDK7+的 {@link Files#copy(Path, Path, CopyOption...)} 方法拷贝文件
+	 * 通过JDK7+的 {@link Files#copy(InputStream, Path, CopyOption...)} 方法拷贝文件
 	 *
-	 * @param src     源文件路径
+	 * @param src     源文件流
+	 * @param target  目标文件或目录，如果为目录使用与源文件相同的文件名
+	 * @param options {@link StandardCopyOption}
+	 * @return 目标Path
+	 * @throws IORuntimeException IO异常
+	 * @since 5.8.27
+	 */
+	public static Path copyFile(Resource src, Path target, CopyOption... options) throws IORuntimeException {
+		Assert.notNull(src, "Source is null !");
+		if(src instanceof FileResource){
+			return copyFile(((FileResource) src).getFile().toPath(), target, options);
+		}
+		try(InputStream stream = src.getStream()){
+			return copyFile(stream, target, options);
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	/**
+	 * 通过JDK7+的 {@link Files#copy(InputStream, Path, CopyOption...)} 方法拷贝文件
+	 *
+	 * @param src     源文件流，使用后不闭流
+	 * @param target  目标文件或目录，如果为目录使用与源文件相同的文件名
+	 * @param options {@link StandardCopyOption}
+	 * @return 目标Path
+	 * @throws IORuntimeException IO异常
+	 * @since 5.8.27
+	 */
+	public static Path copyFile(InputStream src, Path target, CopyOption... options) throws IORuntimeException {
+		Assert.notNull(src, "Source is null !");
+		Assert.notNull(target, "Destination File or directory is null !");
+
+		// 创建级联父目录
+		mkParentDirs(target);
+
+		try {
+			Files.copy(src, target, options);
+		} catch (IOException e) {
+			throw new IORuntimeException(e);
+		}
+
+		return target;
+	}
+
+	/**
+	 * 通过JDK7+的 {@link Files#copy(Path, Path, CopyOption...)} 方法拷贝文件<br>
+	 * 此方法不支持递归拷贝目录，如果src传入是目录，只会在目标目录中创建空目录
+	 *
+	 * @param src     源文件路径，如果为目录只在目标中创建新目录
 	 * @param dest    目标文件或目录，如果为目录使用与源文件相同的文件名
 	 * @param options {@link StandardCopyOption}
-	 * @return Path
+	 * @return 目标Path
 	 * @throws IORuntimeException IO异常
 	 */
 	public static Path copyFile(Path src, Path dest, StandardCopyOption... options) throws IORuntimeException {
@@ -169,25 +244,92 @@ public class PathUtil {
 	}
 
 	/**
-	 * 通过JDK7+的 {@link Files#copy(Path, Path, CopyOption...)} 方法拷贝文件
+	 * 通过JDK7+的 {@link Files#copy(Path, Path, CopyOption...)} 方法拷贝文件<br>
+	 * 此方法不支持递归拷贝目录，如果src传入是目录，只会在目标目录中创建空目录
 	 *
-	 * @param src     源文件路径
-	 * @param dest    目标文件或目录，如果为目录使用与源文件相同的文件名
+	 * @param src     源文件路径，如果为目录只在目标中创建新目录
+	 * @param target  目标文件或目录，如果为目录使用与源文件相同的文件名
 	 * @param options {@link StandardCopyOption}
-	 * @return Path
+	 * @return 目标Path
 	 * @throws IORuntimeException IO异常
 	 * @since 5.4.1
 	 */
-	public static Path copyFile(Path src, Path dest, CopyOption... options) throws IORuntimeException {
+	public static Path copyFile(Path src, Path target, CopyOption... options) throws IORuntimeException {
 		Assert.notNull(src, "Source File is null !");
-		Assert.notNull(dest, "Destination File or directiory is null !");
+		Assert.notNull(target, "Destination File or directory is null !");
 
-		Path destPath = dest.toFile().isDirectory() ? dest.resolve(src.getFileName()) : dest;
+		final Path targetPath = isDirectory(target) ? target.resolve(src.getFileName()) : target;
+		// 创建级联父目录
+		mkParentDirs(targetPath);
 		try {
-			return Files.copy(src, destPath, options);
+			return Files.copy(src, targetPath, options);
 		} catch (IOException e) {
 			throw new IORuntimeException(e);
 		}
+	}
+
+	/**
+	 * 拷贝文件或目录，拷贝规则为：
+	 *
+	 * <ul>
+	 *     <li>源文件为目录，目标也为目录或不存在，则拷贝整个目录到目标目录下</li>
+	 *     <li>源文件为文件，目标为目录或不存在，则拷贝文件到目标目录下</li>
+	 *     <li>源文件为文件，目标也为文件，则在{@link StandardCopyOption#REPLACE_EXISTING}情况下覆盖之</li>
+	 * </ul>
+	 *
+	 * @param src     源文件路径，如果为目录会在目标中创建新目录
+	 * @param target  目标文件或目录，如果为目录使用与源文件相同的文件名
+	 * @param options {@link StandardCopyOption}
+	 * @return Path
+	 * @throws IORuntimeException IO异常
+	 * @since 5.5.1
+	 */
+	public static Path copy(Path src, Path target, CopyOption... options) throws IORuntimeException {
+		Assert.notNull(src, "Src path must be not null !");
+		Assert.notNull(target, "Target path must be not null !");
+
+		if (isDirectory(src)) {
+			return copyContent(src, target.resolve(src.getFileName()), options);
+		}
+		return copyFile(src, target, options);
+	}
+
+	/**
+	 * 拷贝目录下的所有文件或目录到目标目录中，此方法不支持文件对文件的拷贝。
+	 * <ul>
+	 *     <li>源文件为目录，目标也为目录或不存在，则拷贝目录下所有文件和目录到目标目录下</li>
+	 *     <li>源文件为文件，目标为目录或不存在，则拷贝文件到目标目录下</li>
+	 * </ul>
+	 *
+	 * @param src     源文件路径，如果为目录只在目标中创建新目录
+	 * @param target  目标目录，如果为目录使用与源文件相同的文件名
+	 * @param options {@link StandardCopyOption}
+	 * @return Path
+	 * @throws IORuntimeException IO异常
+	 * @since 5.5.1
+	 */
+	public static Path copyContent(Path src, Path target, CopyOption... options) throws IORuntimeException {
+		Assert.notNull(src, "Src path must be not null !");
+		Assert.notNull(target, "Target path must be not null !");
+
+		try {
+			Files.walkFileTree(src, new CopyVisitor(src, target, options));
+		} catch (IOException e) {
+			throw new IORuntimeException(e);
+		}
+		return target;
+	}
+
+	/**
+	 * 判断是否为目录，如果file为null，则返回false<br>
+	 * 此方法不会追踪到软链对应的真实地址，即软链被当作文件
+	 *
+	 * @param path {@link Path}
+	 * @return 如果为目录true
+	 * @since 5.5.1
+	 */
+	public static boolean isDirectory(Path path) {
+		return isDirectory(path, false);
 	}
 
 	/**
@@ -202,8 +344,7 @@ public class PathUtil {
 		if (null == path) {
 			return false;
 		}
-		final LinkOption[] options = isFollowLinks ? new LinkOption[0] : new LinkOption[]{LinkOption.NOFOLLOW_LINKS};
-		return Files.isDirectory(path, options);
+		return Files.isDirectory(path, getLinkOptions(isFollowLinks));
 	}
 
 	/**
@@ -287,9 +428,8 @@ public class PathUtil {
 			return null;
 		}
 
-		final LinkOption[] options = isFollowLinks ? new LinkOption[0] : new LinkOption[]{LinkOption.NOFOLLOW_LINKS};
 		try {
-			return Files.readAttributes(path, BasicFileAttributes.class, options);
+			return Files.readAttributes(path, BasicFileAttributes.class, getLinkOptions(isFollowLinks));
 		} catch (IOException e) {
 			throw new IORuntimeException(e);
 		}
@@ -339,6 +479,21 @@ public class PathUtil {
 	}
 
 	/**
+	 * 读取文件的所有内容为byte数组
+	 *
+	 * @param path 文件
+	 * @return byte数组
+	 * @since 5.5.4
+	 */
+	public static byte[] readBytes(Path path) {
+		try {
+			return Files.readAllBytes(path);
+		} catch (IOException e) {
+			throw new IORuntimeException(e);
+		}
+	}
+
+	/**
 	 * 获得输出流
 	 *
 	 * @param path Path
@@ -370,12 +525,48 @@ public class PathUtil {
 	 * @since 5.4.1
 	 */
 	public static Path rename(Path path, String newName, boolean isOverride) {
-		final CopyOption[] options = isOverride ? new CopyOption[]{StandardCopyOption.REPLACE_EXISTING} : new CopyOption[]{};
-		try {
-			return Files.move(path, path.resolveSibling(newName), options);
-		} catch (IOException e) {
-			throw new IORuntimeException(e);
-		}
+		return move(path, path.resolveSibling(newName), isOverride);
+	}
+
+	/**
+	 * 移动文件或目录到目标中，例如：
+	 * <ul>
+	 *     <li>如果src和target为同一文件或目录，直接返回target。</li>
+	 *     <li>如果src为文件，target为目录，则移动到目标目录下，存在同名文件则按照是否覆盖参数执行。</li>
+	 *     <li>如果src为文件，target为文件，则按照是否覆盖参数执行。</li>
+	 *     <li>如果src为文件，target为不存在的路径，则重命名源文件到目标指定的文件，如moveContent("/a/b", "/c/d"), d不存在，则b变成d。</li>
+	 *     <li>如果src为目录，target为文件，抛出{@link IllegalArgumentException}</li>
+	 *     <li>如果src为目录，target为目录，则将源目录及其内容移动到目标路径目录中，如move("/a/b", "/c/d")，结果为"/c/d/b"</li>
+	 *     <li>如果src为目录，target为不存在的路径，则重命名src到target，如move("/a/b", "/c/d")，结果为"/c/d/"，相当于b重命名为d</li>
+	 * </ul>
+	 *
+	 * @param src        源文件或目录路径
+	 * @param target     目标路径，如果为目录，则移动到此目录下
+	 * @param isOverride 是否覆盖目标文件
+	 * @return 目标文件Path
+	 */
+	public static Path move(Path src, Path target, boolean isOverride) {
+		return PathMover.of(src, target, isOverride).move();
+	}
+
+	/**
+	 * 移动文件或目录内容到目标中，例如：
+	 * <ul>
+	 *     <li>如果src为文件，target为目录，则移动到目标目录下，存在同名文件则按照是否覆盖参数执行。</li>
+	 *     <li>如果src为文件，target为文件，则按照是否覆盖参数执行。</li>
+	 *     <li>如果src为文件，target为不存在的路径，则重命名源文件到目标指定的文件，如moveContent("/a/b", "/c/d"), d不存在，则b变成d。</li>
+	 *     <li>如果src为目录，target为文件，抛出{@link IllegalArgumentException}</li>
+	 *     <li>如果src为目录，target为目录，则将源目录下的内容移动到目标路径目录中，源目录不删除。</li>
+	 *     <li>如果src为目录，target为不存在的路径，则创建目标路径为目录，将源目录下的内容移动到目标路径目录中，源目录不删除。</li>
+	 * </ul>
+	 *
+	 * @param src        源文件或目录路径
+	 * @param target     目标路径，如果为目录，则移动到此目录下
+	 * @param isOverride 是否覆盖目标文件
+	 * @return 目标文件Path
+	 */
+	public static Path moveContent(Path src, Path target, boolean isOverride) {
+		return PathMover.of(src, target, isOverride).moveContent();
 	}
 
 	/**
@@ -409,8 +600,7 @@ public class PathUtil {
 		if (null == path) {
 			return false;
 		}
-		final LinkOption[] options = isFollowLinks ? new LinkOption[0] : new LinkOption[]{LinkOption.NOFOLLOW_LINKS};
-		return Files.isRegularFile(path, options);
+		return Files.isRegularFile(path, getLinkOptions(isFollowLinks));
 	}
 
 	/**
@@ -422,5 +612,186 @@ public class PathUtil {
 	 */
 	public static boolean isSymlink(Path path) {
 		return Files.isSymbolicLink(path);
+	}
+
+	/**
+	 * 判断文件或目录是否存在
+	 *
+	 * @param path          文件
+	 * @param isFollowLinks 是否跟踪软链（快捷方式）
+	 * @return 是否存在
+	 * @since 5.5.3
+	 */
+	public static boolean exists(Path path, boolean isFollowLinks) {
+		return Files.exists(path, getLinkOptions(isFollowLinks));
+	}
+
+	/**
+	 * 判断是否存在且为非目录
+	 * <ul>
+	 *     <li>如果path为{@code null}，返回{@code false}</li>
+	 *     <li>如果path不存在，返回{@code false}</li>
+	 * </ul>
+	 *
+	 * @param path          {@link Path}
+	 * @param isFollowLinks 是否追踪到软链对应的真实地址
+	 * @return 如果为目录true
+	 * @since 5.8.14
+	 */
+	public static boolean isExistsAndNotDirectory(final Path path, final boolean isFollowLinks) {
+		return exists(path, isFollowLinks) && false == isDirectory(path, isFollowLinks);
+	}
+
+	/**
+	 * 判断给定的目录是否为给定文件或文件夹的子目录
+	 *
+	 * @param parent 父目录
+	 * @param sub    子目录
+	 * @return 子目录是否为父目录的子目录
+	 * @since 5.5.5
+	 */
+	public static boolean isSub(Path parent, Path sub) {
+		return toAbsNormal(sub).startsWith(toAbsNormal(parent));
+	}
+
+	/**
+	 * 将Path路径转换为标准的绝对路径
+	 *
+	 * @param path 文件或目录Path
+	 * @return 转换后的Path
+	 * @since 5.5.5
+	 */
+	public static Path toAbsNormal(Path path) {
+		Assert.notNull(path);
+		return path.toAbsolutePath().normalize();
+	}
+
+	/**
+	 * 获得文件的MimeType
+	 *
+	 * @param file 文件
+	 * @return MimeType
+	 * @see Files#probeContentType(Path)
+	 * @since 5.5.5
+	 */
+	public static String getMimeType(Path file) {
+		try {
+			return Files.probeContentType(file);
+		} catch (IOException ignore) {
+			// issue#3179，使用OpenJDK可能抛出NoSuchFileException，此处返回null
+			return null;
+		}
+	}
+
+	/**
+	 * 创建所给目录及其父目录
+	 *
+	 * @param dir 目录
+	 * @return 目录
+	 * @since 5.5.7
+	 */
+	public static Path mkdir(Path dir) {
+		if (null != dir && false == exists(dir, false)) {
+			try {
+				Files.createDirectories(dir);
+			} catch (IOException e) {
+				throw new IORuntimeException(e);
+			}
+		}
+		return dir;
+	}
+
+	/**
+	 * 创建所给文件或目录的父目录
+	 *
+	 * @param path 文件或目录
+	 * @return 父目录
+	 * @since 5.5.7
+	 */
+	public static Path mkParentDirs(Path path) {
+		return mkdir(path.getParent());
+	}
+
+	/**
+	 * 获取{@link Path}文件名
+	 *
+	 * @param path {@link Path}
+	 * @return 文件名
+	 * @since 5.7.15
+	 */
+	public static String getName(Path path) {
+		if (null == path) {
+			return null;
+		}
+		return path.getFileName().toString();
+	}
+
+	/**
+	 * 创建临时文件<br>
+	 * 创建后的文件名为 prefix[Random].suffix From com.jodd.io.FileUtil
+	 *
+	 * @param prefix    前缀，至少3个字符
+	 * @param suffix    后缀，如果null则使用默认.tmp
+	 * @param dir       临时文件创建的所在目录
+	 * @return 临时文件
+	 * @throws IORuntimeException IO异常
+	 * @since 6.0.0
+	 */
+	public static Path createTempFile(final String prefix, final String suffix, final Path dir) throws IORuntimeException {
+		int exceptionsCount = 0;
+		while (true) {
+			try {
+				if(null == dir){
+					return Files.createTempFile(prefix, suffix);
+				}else{
+					return Files.createTempFile(mkdir(dir), prefix, suffix);
+				}
+			} catch (final IOException ioex) { // fixes java.io.WinNTFileSystem.createFileExclusively access denied
+				if (++exceptionsCount >= 50) {
+					throw new IORuntimeException(ioex);
+				}
+			}
+		}
+	}
+
+	/**
+	 * 删除文件或空目录，不追踪软链
+	 *
+	 * @param path 文件对象
+	 * @throws IOException IO异常
+	 * @since 5.7.7
+	 */
+	protected static void delFile(Path path) throws IOException {
+		try {
+			Files.delete(path);
+		} catch (AccessDeniedException e) {
+			// 可能遇到只读文件，无法删除.使用 file 方法删除
+			if (false == path.toFile().delete()) {
+				throw e;
+			}
+		}
+	}
+
+	/**
+	 * 构建是否追踪软链的选项
+	 *
+	 * @param isFollowLinks 是否追踪软链
+	 * @return 选项
+	 * @since 5.8.23
+	 */
+	public static LinkOption[] getLinkOptions(final boolean isFollowLinks) {
+		return isFollowLinks ? new LinkOption[0] : new LinkOption[]{LinkOption.NOFOLLOW_LINKS};
+	}
+
+	/**
+	 * 构建是否追踪软链的选项
+	 *
+	 * @param isFollowLinks 是否追踪软链
+	 * @return 选项
+	 * @since 5.8.23
+	 */
+	public static Set<FileVisitOption> getFileVisitOption(final boolean isFollowLinks) {
+		return isFollowLinks ? EnumSet.of(FileVisitOption.FOLLOW_LINKS) :
+			EnumSet.noneOf(FileVisitOption.class);
 	}
 }

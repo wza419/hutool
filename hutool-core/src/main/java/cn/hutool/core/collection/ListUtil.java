@@ -2,23 +2,22 @@ package cn.hutool.core.collection;
 
 import cn.hutool.core.comparator.PinyinComparator;
 import cn.hutool.core.comparator.PropertyComparator;
-import cn.hutool.core.convert.Convert;
-import cn.hutool.core.lang.Editor;
+import cn.hutool.core.exceptions.ValidateException;
+import cn.hutool.core.lang.Assert;
 import cn.hutool.core.lang.Matcher;
 import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.PageUtil;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Enumeration;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Consumer;
 
+/**
+ * List相关工具类
+ *
+ * @author looly
+ */
 public class ListUtil {
 	/**
 	 * 新建一个空List
@@ -85,7 +84,7 @@ public class ListUtil {
 	}
 
 	/**
-	 * 新建一个ArrayList<br>
+	 * 新建一个List<br>
 	 * 提供的参数为null时返回空{@link ArrayList}
 	 *
 	 * @param <T>      集合元素类型
@@ -147,6 +146,23 @@ public class ListUtil {
 	@SafeVarargs
 	public static <T> LinkedList<T> toLinkedList(T... values) {
 		return (LinkedList<T>) list(true, values);
+	}
+
+	/**
+	 * 数组转为一个不可变List<br>
+	 * 类似于Java9中的List.of
+	 *
+	 * @param ts  对象
+	 * @param <T> 对象类型
+	 * @return 不可修改List
+	 * @since 5.4.3
+	 */
+	@SafeVarargs
+	public static <T> List<T> of(T... ts) {
+		if (ArrayUtil.isEmpty(ts)) {
+			return Collections.emptyList();
+		}
+		return Collections.unmodifiableList(toList(ts));
 	}
 
 	/**
@@ -214,7 +230,7 @@ public class ListUtil {
 	 * 对指定List分页取值
 	 *
 	 * @param <T>      集合元素类型
-	 * @param pageNo   页码，从0开始计数，0表示第一页
+	 * @param pageNo   页码，第一页的页码取决于{@link PageUtil#getFirstPageNo()}，默认0
 	 * @param pageSize 每页的条目数
 	 * @param list     列表
 	 * @return 分页后的段落内容
@@ -228,15 +244,15 @@ public class ListUtil {
 		int resultSize = list.size();
 		// 每页条目数大于总数直接返回所有
 		if (resultSize <= pageSize) {
-			if (pageNo < 1) {
-				return Collections.unmodifiableList(list);
+			if (pageNo < (PageUtil.getFirstPageNo() + 1)) {
+				return unmodifiable(list);
 			} else {
 				// 越界直接返回空
 				return new ArrayList<>(0);
 			}
 		}
-
-		if((pageNo * pageSize) > resultSize){
+		// 相乘可能会导致越界 临时用long
+		if (((long) (pageNo - PageUtil.getFirstPageNo()) * pageSize) > resultSize) {
 			// 越界直接返回空
 			return new ArrayList<>(0);
 		}
@@ -244,9 +260,40 @@ public class ListUtil {
 		final int[] startEnd = PageUtil.transToStartEnd(pageNo, pageSize);
 		if (startEnd[1] > resultSize) {
 			startEnd[1] = resultSize;
+			if (startEnd[0] > startEnd[1]) {
+				return new ArrayList<>(0);
+			}
 		}
 
-		return list.subList(startEnd[0], startEnd[1]);
+		return sub(list, startEnd[0], startEnd[1]);
+	}
+
+	/**
+	 * 对指定List进行分页，逐页返回数据
+	 *
+	 * @param <T>              集合元素类型
+	 * @param list             源数据列表
+	 * @param pageSize         每页的条目数
+	 * @param pageListConsumer 单页数据函数式返回
+	 * @since 5.7.10
+	 */
+	public static <T> void page(List<T> list, int pageSize, Consumer<List<T>> pageListConsumer) {
+		if (CollUtil.isEmpty(list) || pageSize <= 0) {
+			return;
+		}
+
+		final int total = list.size();
+		final int totalPage = PageUtil.totalPage(total, pageSize);
+		for (int pageNo = PageUtil.getFirstPageNo(); pageNo < totalPage + PageUtil.getFirstPageNo(); pageNo++) {
+			// 获取当前页在列表中对应的起止序号
+			final int[] startEnd = PageUtil.transToStartEnd(pageNo, pageSize);
+			if (startEnd[1] > total) {
+				startEnd[1] = total;
+			}
+
+			// 返回数据
+			pageListConsumer.accept(sub(list, startEnd[0], startEnd[1]));
+		}
 	}
 
 	/**
@@ -259,6 +306,9 @@ public class ListUtil {
 	 * @see Collections#sort(List, Comparator)
 	 */
 	public static <T> List<T> sort(List<T> list, Comparator<? super T> c) {
+		if (CollUtil.isEmpty(list)) {
+			return list;
+		}
 		list.sort(c);
 		return list;
 	}
@@ -309,8 +359,18 @@ public class ListUtil {
 	 * @since 4.0.6
 	 */
 	public static <T> List<T> reverseNew(List<T> list) {
-		final List<T> list2 = ObjectUtil.clone(list);
-		return reverse(list2);
+		List<T> list2 = ObjectUtil.clone(list);
+		if (null == list2) {
+			// 不支持clone
+			list2 = new ArrayList<>(list);
+		}
+
+		try {
+			return reverse(list2);
+		} catch (final UnsupportedOperationException e) {
+			// 提供的列表不可编辑,新建列表
+			return reverse(list(false, list));
+		}
 	}
 
 	/**
@@ -324,9 +384,72 @@ public class ListUtil {
 	 * @since 4.1.2
 	 */
 	public static <T> List<T> setOrAppend(List<T> list, int index, T element) {
+		Assert.notNull(list, "List must be not null !");
 		if (index < list.size()) {
 			list.set(index, element);
 		} else {
+			list.add(element);
+		}
+		return list;
+	}
+
+	/**
+	 * 在指定位置设置元素。当index小于List的长度时，替换指定位置的值，否则追加{@code null}直到到达index后，设置值
+	 *
+	 * @param <T>     元素类型
+	 * @param list    List列表
+	 * @param index   位置
+	 * @param element 新元素
+	 * @return 原List
+	 * @since 5。8.4
+	 */
+	public static <T> List<T> setOrPadding(List<T> list, int index, T element) {
+		return setOrPadding(list, index, element, null);
+	}
+
+	/**
+	 * 在指定位置设置元素。当index小于List的长度时，替换指定位置的值，否则追加{@code paddingElement}直到到达index后，设置值<br>
+	 * 注意：为避免OOM问题，此方法限制index的最大值为{@code (list.size() + 1) * 10}
+	 *
+	 * @param <T>            元素类型
+	 * @param list           List列表
+	 * @param index          位置
+	 * @param element        新元素
+	 * @param paddingElement 填充的值
+	 * @return 原List
+	 * @since 5.8.4
+	 */
+	public static <T> List<T> setOrPadding(List<T> list, int index, T element, T paddingElement) {
+		return setOrPadding(list, index, element, paddingElement, (list.size() + 1) * 10);
+	}
+
+	/**
+	 * 在指定位置设置元素。当index小于List的长度时，替换指定位置的值，否则追加{@code paddingElement}直到到达index后，设置值
+	 *
+	 * @param <T>            元素类型
+	 * @param list           List列表
+	 * @param index          位置
+	 * @param element        新元素
+	 * @param paddingElement 填充的值
+	 * @param indexLimit     最大索引限制
+	 * @return 原List
+	 * @since 5.8.28
+	 */
+	public static <T> List<T> setOrPadding(List<T> list, int index, T element, T paddingElement, int indexLimit) {
+		Assert.notNull(list, "List must be not null !");
+		final int size = list.size();
+		if (index < size) {
+			list.set(index, element);
+		} else {
+			if (indexLimit > 0) {
+				// issue#3286, 增加安全检查
+				if (index > indexLimit) {
+					throw new ValidateException("Index [{}] is too large for limit: [{}]", index, indexLimit);
+				}
+			}
+			for (int i = size; i < index; i++) {
+				list.add(paddingElement);
+			}
 			list.add(element);
 		}
 		return list;
@@ -341,12 +464,14 @@ public class ListUtil {
 	 * @param end   结束位置（不包含）
 	 * @return 截取后的数组，当开始位置超过最大时，返回空的List
 	 */
-	public static <T> List<T> sub(List<T> list, int start, int end) {
+	public static <T> List<T>
+	sub(List<T> list, int start, int end) {
 		return sub(list, start, end, 1);
 	}
 
 	/**
-	 * 截取集合的部分
+	 * 截取集合的部分<br>
+	 * 此方法与{@link List#subList(int, int)} 不同在于子列表是新的副本，操作子列表不会影响原列表。
 	 *
 	 * @param <T>   集合元素类型
 	 * @param list  被截取的数组
@@ -387,8 +512,8 @@ public class ListUtil {
 			end = size;
 		}
 
-		if (step <= 1) {
-			return list.subList(start, end);
+		if (step < 1) {
+			step = 1;
 		}
 
 		final List<T> result = new ArrayList<>();
@@ -399,34 +524,27 @@ public class ListUtil {
 	}
 
 	/**
-	 * 过滤<br>
-	 * 过滤过程通过传入的Editor实现来返回需要的元素内容，这个Editor实现可以实现以下功能：
+	 * 获取匹配规则定义中匹配到元素的最后位置<br>
+	 * 此方法对于某些无序集合的位置信息，以转换为数组后的位置为准。
 	 *
-	 * <pre>
-	 * 1、过滤出需要的对象，如果返回null表示这个元素对象抛弃
-	 * 2、修改元素对象，返回集合中为修改后的对象
-	 * </pre>
-	 *
-	 * @param <T>    集合元素类型
-	 * @param list   集合
-	 * @param editor 编辑器接口
-	 * @return 过滤后的数组
-	 * @since 4.1.8
+	 * @param <T>     元素类型
+	 * @param list    List集合
+	 * @param matcher 匹配器，为空则全部匹配
+	 * @return 最后一个位置
+	 * @since 5.6.6
 	 */
-	public static <T> List<T> filter(List<T> list, Editor<T> editor) {
-		if (null == list || null == editor) {
-			return list;
-		}
-
-		final List<T> list2 = (list instanceof LinkedList) ? new LinkedList<>() : new ArrayList<>(list.size());
-		T modified;
-		for (T t : list) {
-			modified = editor.edit(t);
-			if (null != modified) {
-				list2.add(modified);
+	public static <T> int lastIndexOf(List<T> list, Matcher<T> matcher) {
+		if (null != list) {
+			final int size = list.size();
+			if (size > 0) {
+				for (int i = size - 1; i >= 0; i--) {
+					if (null == matcher || matcher.match(list.get(i))) {
+						return i;
+					}
+				}
 			}
 		}
-		return list2;
+		return -1;
 	}
 
 	/**
@@ -439,17 +557,7 @@ public class ListUtil {
 	 * @since 5.2.5
 	 */
 	public static <T> int[] indexOfAll(List<T> list, Matcher<T> matcher) {
-		final List<Integer> indexList = new ArrayList<>();
-		if (null != list) {
-			int index = 0;
-			for (T t : list) {
-				if (null == matcher || matcher.match(t)) {
-					indexList.add(index);
-				}
-				index++;
-			}
-		}
-		return Convert.convert(int[].class, indexList);
+		return CollUtil.indexOfAll(list, matcher);
 	}
 
 	/**
@@ -461,17 +569,156 @@ public class ListUtil {
 	 * @since 5.2.6
 	 */
 	public static <T> List<T> unmodifiable(List<T> list) {
+		if (null == list) {
+			return null;
+		}
 		return Collections.unmodifiableList(list);
 	}
 
 	/**
-	 * 获取一个空List
+	 * 获取一个空List，这个空List不可变
 	 *
 	 * @param <T> 元素类型
 	 * @return 空的List
+	 * @see Collections#emptyList()
 	 * @since 5.2.6
 	 */
 	public static <T> List<T> empty() {
 		return Collections.emptyList();
+	}
+
+	/**
+	 * 通过传入分区长度，将指定列表分区为不同的块，每块区域的长度相同（最后一块可能小于长度）<br>
+	 * 分区是在原List的基础上进行的，返回的分区是不可变的抽象列表，原列表元素变更，分区中元素也会变更。
+	 *
+	 * <p>
+	 * 需要特别注意的是，此方法调用{@link List#subList(int, int)}切分List，
+	 * 此方法返回的是原List的视图，也就是说原List有变更，切分后的结果也会变更。
+	 * </p>
+	 *
+	 * @param <T>  集合元素类型
+	 * @param list 列表，为空时返回{@link #empty()}
+	 * @param size 每个段的长度，当长度超过list长度时，size按照list长度计算，即只返回一个节点
+	 * @return 分段列表
+	 * @since 5.4.5
+	 */
+	public static <T> List<List<T>> partition(List<T> list, int size) {
+		if (CollUtil.isEmpty(list)) {
+			return empty();
+		}
+
+		return (list instanceof RandomAccess)
+			? new RandomAccessPartition<>(list, size)
+			: new Partition<>(list, size);
+	}
+
+	/**
+	 * 对集合按照指定长度分段，每一个段为单独的集合，返回这个集合的列表
+	 *
+	 * <p>
+	 * 需要特别注意的是，此方法调用{@link List#subList(int, int)}切分List，
+	 * 此方法返回的是原List的视图，也就是说原List有变更，切分后的结果也会变更。
+	 * </p>
+	 *
+	 * @param <T>  集合元素类型
+	 * @param list 列表，为空时返回{@link #empty()}
+	 * @param size 每个段的长度，当长度超过list长度时，size按照list长度计算，即只返回一个节点
+	 * @return 分段列表
+	 * @see #partition(List, int)
+	 * @since 5.4.5
+	 */
+	public static <T> List<List<T>> split(List<T> list, int size) {
+		return partition(list, size);
+	}
+
+	/**
+	 * 将集合平均分成多个list，返回这个集合的列表
+	 * <p>例：</p>
+	 * <pre>
+	 *     ListUtil.splitAvg(null, 3);	// []
+	 *     ListUtil.splitAvg(Arrays.asList(1, 2, 3, 4), 2);	// [[1, 2], [3, 4]]
+	 *     ListUtil.splitAvg(Arrays.asList(1, 2, 3), 5);	// [[1], [2], [3], [], []]
+	 *     ListUtil.splitAvg(Arrays.asList(1, 2, 3), 2);	// [[1, 2], [3]]
+	 * </pre>
+	 *
+	 * @param <T>   集合元素类型
+	 * @param list  集合
+	 * @param limit 要均分成几个list
+	 * @return 分段列表
+	 * @author lileming
+	 * @since 5.7.10
+	 */
+	public static <T> List<List<T>> splitAvg(List<T> list, int limit) {
+		if (CollUtil.isEmpty(list)) {
+			return empty();
+		}
+
+		return (list instanceof RandomAccess)
+			? new RandomAccessAvgPartition<>(list, limit)
+			: new AvgPartition<>(list, limit);
+	}
+
+	/**
+	 * 将指定元素交换到指定索引位置,其他元素的索引值不变<br>
+	 * 交换会修改原List<br>
+	 * 如果集合中有多个相同元素，只交换第一个找到的元素
+	 *
+	 * @param <T>         元素类型
+	 * @param list        列表
+	 * @param element     需交换元素
+	 * @param targetIndex 目标索引
+	 * @since 5.7.13
+	 */
+	public static <T> void swapTo(List<T> list, T element, Integer targetIndex) {
+		if (CollUtil.isNotEmpty(list)) {
+			final int index = list.indexOf(element);
+			if (index >= 0) {
+				Collections.swap(list, index, targetIndex);
+			}
+		}
+	}
+
+	/**
+	 * 将指定元素交换到指定元素位置,其他元素的索引值不变<br>
+	 * 交换会修改原List<br>
+	 * 如果集合中有多个相同元素，只交换第一个找到的元素
+	 *
+	 * @param <T>           元素类型
+	 * @param list          列表
+	 * @param element       需交换元素
+	 * @param targetElement 目标元素
+	 */
+	public static <T> void swapElement(List<T> list, T element, T targetElement) {
+		if (CollUtil.isNotEmpty(list)) {
+			final int targetIndex = list.indexOf(targetElement);
+			if (targetIndex >= 0) {
+				swapTo(list, element, targetIndex);
+			}
+		}
+	}
+
+	/**
+	 * 将元素移动到指定列表的新位置。
+	 * <ul>
+	 *     <li>如果元素不在列表中，则将其添加到新位置。</li>
+	 *     <li>如果元素已在列表中，则先移除它，然后再将其添加到新位置。</li>
+	 * </ul>
+	 *
+	 * @param list        原始列表，元素将在这个列表上进行操作。
+	 * @param element     需要移动的元素。
+	 * @param newPosition 元素的新位置，从0开始计数，位置计算是以移除元素后的列表位置计算的
+	 * @param <T>         列表和元素的通用类型。
+	 * @return 更新后的列表。
+	 * @since 5.8.29
+	 */
+	public static <T> List<T> move(List<T> list, T element, int newPosition) {
+		Assert.notNull(list);
+		if (false == list.contains(element)) {
+			list.add(newPosition, element);
+		} else {
+			list.remove(element);
+			list.add(newPosition, element);
+		}
+		return list;
 	}
 }

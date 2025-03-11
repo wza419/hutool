@@ -2,6 +2,7 @@ package cn.hutool.extra.ftp;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.util.CharUtil;
 import cn.hutool.core.util.CharsetUtil;
 import cn.hutool.core.util.StrUtil;
 
@@ -18,6 +19,9 @@ import java.util.List;
  */
 public abstract class AbstractFtp implements Closeable {
 
+	/**
+	 * 默认编码
+	 */
 	public static final Charset DEFAULT_CHARSET = CharsetUtil.CHARSET_UTF_8;
 
 	protected FtpConfig ftpConfig;
@@ -41,7 +45,7 @@ public abstract class AbstractFtp implements Closeable {
 	public abstract AbstractFtp reconnectIfTimeout();
 
 	/**
-	 * 打开指定目录
+	 * 打开指定目录，具体逻辑取决于实现，例如在FTP中，进入失败返回{@code false}， SFTP中则抛出异常
 	 *
 	 * @param directory directory
 	 * @return 是否打开目录
@@ -66,6 +70,22 @@ public abstract class AbstractFtp implements Closeable {
 	public abstract String pwd();
 
 	/**
+	 * 判断给定路径是否为目录
+	 *
+	 * @param dir 被判断的路径
+	 * @return 是否为目录
+	 * @since 5.7.5
+	 */
+	public boolean isDir(String dir) {
+		final String workDir = pwd();
+		try {
+			return cd(dir);
+		} finally {
+			cd(workDir);
+		}
+	}
+
+	/**
 	 * 在当前远程目录（工作目录）下创建新的目录
 	 *
 	 * @param dir 目录名
@@ -80,9 +100,33 @@ public abstract class AbstractFtp implements Closeable {
 	 * @return 是否存在
 	 */
 	public boolean exist(String path) {
+		if (StrUtil.isBlank(path)) {
+			return false;
+		}
+		// 目录验证
+		if (isDir(path)) {
+			return true;
+		}
+		if (CharUtil.isFileSeparator(path.charAt(path.length() - 1))) {
+			return false;
+		}
 		final String fileName = FileUtil.getName(path);
-		final String dir = StrUtil.removeSuffix(path, fileName);
-		final List<String> names = ls(dir);
+		if (".".equals(fileName) || "..".equals(fileName)) {
+			return false;
+		}
+		// 文件验证
+		final String dir = StrUtil.emptyToDefault(StrUtil.removeSuffix(path, fileName), ".");
+		// issue#I7CSQ9 检查父目录为目录且是否存在
+		if(false == isDir(dir)){
+			return false;
+		}
+
+		final List<String> names;
+		try {
+			names = ls(dir);
+		} catch (FtpException ignore) {
+			return false;
+		}
 		return containsIgnoreCase(names, fileName);
 	}
 
@@ -125,7 +169,15 @@ public abstract class AbstractFtp implements Closeable {
 		}
 		for (String s : dirs) {
 			if (StrUtil.isNotEmpty(s)) {
-				if (false == cd(s)) {
+				boolean exist = true;
+				try {
+					if (false == cd(s)) {
+						exist = false;
+					}
+				} catch (FtpException e) {
+					exist = false;
+				}
+				if (false == exist) {
 					//目录不存在时创建
 					mkdir(s);
 					cd(s);
@@ -153,6 +205,41 @@ public abstract class AbstractFtp implements Closeable {
 	 * @param outFile 输出文件或目录
 	 */
 	public abstract void download(String path, File outFile);
+
+	/**
+	 * 下载文件-避免未完成的文件<br>
+	 * 来自：https://gitee.com/dromara/hutool/pulls/407<br>
+	 * 此方法原理是先在目标文件同级目录下创建临时文件，下载之，等下载完毕后重命名，避免因下载错误导致的文件不完整。
+	 *
+	 * @param path     文件路径
+	 * @param outFile  输出文件或目录
+	 * @param tempFileSuffix 临时文件后缀，默认".temp"
+	 * @since 5.7.12
+	 */
+	public void download(String path, File outFile, String tempFileSuffix) {
+		if(StrUtil.isBlank(tempFileSuffix)){
+			tempFileSuffix = ".temp";
+		} else {
+			tempFileSuffix = StrUtil.addPrefixIfNot(tempFileSuffix, StrUtil.DOT);
+		}
+
+		// 目标文件真实名称
+		final String fileName = outFile.isDirectory() ? FileUtil.getName(path) : outFile.getName();
+		// 临时文件名称
+		final String tempFileName = fileName + tempFileSuffix;
+
+		// 临时文件
+		outFile = new File(outFile.isDirectory() ? outFile : outFile.getParentFile(), tempFileName);
+		try {
+			download(path, outFile);
+			// 重命名下载好的临时文件
+			FileUtil.rename(outFile, fileName, true);
+		} catch (Throwable e) {
+			// 异常则删除临时文件
+			FileUtil.del(outFile);
+			throw new FtpException(e);
+		}
+	}
 
 	/**
 	 * 递归下载FTP服务器上文件到本地(文件目录和服务器同步), 服务器上有新文件会覆盖本地文件

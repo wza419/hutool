@@ -1,5 +1,8 @@
 package cn.hutool.core.util;
 
+import cn.hutool.core.lang.DefaultSegment;
+import cn.hutool.core.lang.Segment;
+
 /**
  * 分页工具类
  *
@@ -28,7 +31,7 @@ public class PageUtil {
 	 *
 	 * @param customFirstPageNo 自定义的首页页码，为0或者1
 	 */
-	public static void setFirstPageNo(int customFirstPageNo) {
+	synchronized public static void setFirstPageNo(int customFirstPageNo) {
 		firstPageNo = customFirstPageNo;
 	}
 
@@ -92,8 +95,8 @@ public class PageUtil {
 	 * <p>
 	 * 当{@link #setFirstPageNo(int)}设置为1时：
 	 * <pre>
-	 * 页码：1，每页10 =》 9
-	 * 页码：2，每页10 =》 19
+	 * 页码：1，每页10 =》 10
+	 * 页码：2，每页10 =》 20
 	 * ……
 	 * </pre>
 	 *
@@ -136,6 +139,35 @@ public class PageUtil {
 	}
 
 	/**
+	 * 将页数和每页条目数转换为开始位置和结束位置<br>
+	 * 此方法用于包括结束位置的分页方法<br>
+	 * 例如：
+	 *
+	 * <pre>
+	 * 页码：0，每页10 =》 [0, 10]
+	 * 页码：1，每页10 =》 [10, 20]
+	 * ……
+	 * </pre>
+	 *
+	 * <p>
+	 * 当{@link #setFirstPageNo(int)}设置为1时：
+	 * <pre>
+	 * 页码：1，每页10 =》 [0, 10]
+	 * 页码：2，每页10 =》 [10, 20]
+	 * ……
+	 * </pre>
+	 *
+	 * @param pageNo   页码（从0计数）
+	 * @param pageSize 每页条目数
+	 * @return {@link Segment}
+	 * @since 5.5.3
+	 */
+	public static Segment<Integer> toSegment(int pageNo, int pageSize) {
+		final int[] startEnd = transToStartEnd(pageNo, pageSize);
+		return new DefaultSegment<>(startEnd[0], startEnd[1]);
+	}
+
+	/**
 	 * 根据总数计算总页数
 	 *
 	 * @param totalCount 总数
@@ -143,15 +175,28 @@ public class PageUtil {
 	 * @return 总页数
 	 */
 	public static int totalPage(int totalCount, int pageSize) {
+		return totalPage((long) totalCount,pageSize);
+	}
+
+	/**
+	 * 根据总数计算总页数
+	 *
+	 * @param totalCount 总数
+	 * @param pageSize   每页数
+	 * @return 总页数
+	 * @since 5.8.5
+	 */
+	public static int totalPage(long totalCount, int pageSize) {
 		if (pageSize == 0) {
 			return 0;
 		}
-		return totalCount % pageSize == 0 ? (totalCount / pageSize) : (totalCount / pageSize + 1);
+		return Math.toIntExact(totalCount % pageSize == 0 ? (totalCount / pageSize) : (totalCount / pageSize + 1));
 	}
 
 	/**
 	 * 分页彩虹算法<br>
-	 * 来自：https://github.com/iceroot/iceroot/blob/master/src/main/java/com/icexxx/util/IceUtil.java<br>
+	 * 来自：<a href="https://github.com/iceroot/iceroot/blob/master/src/main/java/com/icexxx/util/IceUtil.java">
+	 *     https://github.com/iceroot/iceroot/blob/master/src/main/java/com/icexxx/util/IceUtil.java</a><br>
 	 * 通过传入的信息，生成一个分页列表显示
 	 *
 	 * @param pageNo       当前页
@@ -160,9 +205,10 @@ public class PageUtil {
 	 * @return 分页条
 	 */
 	public static int[] rainbow(int pageNo, int totalPage, int displayCount) {
-		boolean isEven = displayCount % 2 == 0;
-		int left = displayCount / 2;
-		int right = displayCount / 2;
+		// displayCount % 2
+		boolean isEven = (displayCount & 1) == 0;
+		int left = displayCount >> 1;
+		int right = displayCount >> 1;
 
 		int length = displayCount;
 		if (isEven) {
@@ -197,7 +243,8 @@ public class PageUtil {
 
 	/**
 	 * 分页彩虹算法(默认展示10页)<br>
-	 * 来自：https://github.com/iceroot/iceroot/blob/master/src/main/java/com/icexxx/util/IceUtil.java
+	 * 来自：<a href="https://github.com/iceroot/iceroot/blob/master/src/main/java/com/icexxx/util/IceUtil.java">
+	 *     https://github.com/iceroot/iceroot/blob/master/src/main/java/com/icexxx/util/IceUtil.java</a>
 	 *
 	 * @param currentPage 当前页
 	 * @param pageCount   总页数

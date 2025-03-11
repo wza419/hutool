@@ -1,17 +1,12 @@
 package cn.hutool.core.io.resource;
 
 import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.io.IORuntimeException;
-import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.URLUtil;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.InputStream;
-import java.io.Serializable;
+import java.io.*;
+import java.net.URI;
 import java.net.URL;
-import java.nio.charset.Charset;
 
 /**
  * URL资源访问类
@@ -20,11 +15,21 @@ import java.nio.charset.Charset;
  */
 public class UrlResource implements Resource, Serializable{
 	private static final long serialVersionUID = 1L;
-	
+
 	protected URL url;
+	private long lastModified = 0;
 	protected String name;
-	
+
 	//-------------------------------------------------------------------------------------- Constructor start
+	/**
+	 * 构造
+	 * @param uri URI
+	 * @since 5.7.21
+	 */
+	public UrlResource(URI uri) {
+		this(URLUtil.url(uri), null);
+	}
+
 	/**
 	 * 构造
 	 * @param url URL
@@ -32,7 +37,7 @@ public class UrlResource implements Resource, Serializable{
 	public UrlResource(URL url) {
 		this(url, null);
 	}
-	
+
 	/**
 	 * 构造
 	 * @param url URL，允许为空
@@ -40,9 +45,12 @@ public class UrlResource implements Resource, Serializable{
 	 */
 	public UrlResource(URL url, String name) {
 		this.url = url;
-		this.name = ObjectUtil.defaultIfNull(name, (null != url) ? FileUtil.getName(url.getPath()) : null);
+		if(null != url && URLUtil.URL_PROTOCOL_FILE.equals(url.getProtocol())){
+			this.lastModified = FileUtil.file(url).lastModified();
+		}
+		this.name = ObjectUtil.defaultIfNull(name, () -> (null != url ? FileUtil.getName(url.getPath()) : null));
 	}
-	
+
 	/**
 	 * 构造
 	 * @param file 文件路径
@@ -53,17 +61,17 @@ public class UrlResource implements Resource, Serializable{
 		this.url = URLUtil.getURL(file);
 	}
 	//-------------------------------------------------------------------------------------- Constructor end
-	
+
 	@Override
 	public String getName() {
 		return this.name;
 	}
-	
+
 	@Override
 	public URL getUrl(){
 		return this.url;
 	}
-	
+
 	@Override
 	public InputStream getStream() throws NoResourceException{
 		if(null == this.url){
@@ -71,41 +79,13 @@ public class UrlResource implements Resource, Serializable{
 		}
 		return URLUtil.getStream(url);
 	}
-	
-	/**
-	 * 获得Reader
-	 * @param charset 编码
-	 * @return {@link BufferedReader}
-	 * @since 3.0.1
-	 */
+
 	@Override
-	public BufferedReader getReader(Charset charset){
-		return URLUtil.getReader(this.url, charset);
+	public boolean isModified() {
+		// lastModified == 0表示此资源非文件资源
+		return (0 != this.lastModified) && this.lastModified != getFile().lastModified();
 	}
-	
-	//------------------------------------------------------------------------------- read
-	@Override
-	public String readStr(Charset charset) throws IORuntimeException{
-		BufferedReader reader = null;
-		try {
-			reader = getReader(charset);
-			return IoUtil.read(reader);
-		} finally {
-			IoUtil.close(reader);
-		}
-	}
-	
-	@Override
-	public byte[] readBytes() throws IORuntimeException{
-		InputStream in = null;
-		try {
-			in = getStream();
-			return IoUtil.readBytes(in);
-		} finally {
-			IoUtil.close(in);
-		}
-	}
-	
+
 	/**
 	 * 获得File
 	 * @return {@link File}
@@ -113,7 +93,7 @@ public class UrlResource implements Resource, Serializable{
 	public File getFile(){
 		return FileUtil.file(this.url);
 	}
-	
+
 	/**
 	 * 返回路径
 	 * @return 返回URL路径
@@ -121,5 +101,15 @@ public class UrlResource implements Resource, Serializable{
 	@Override
 	public String toString() {
 		return (null == this.url) ? "null" : this.url.toString();
+	}
+
+	/**
+	 * 获取资源长度
+	 *
+	 * @return 资源长度
+	 * @since 5.8.21
+	 */
+	public long size() {
+		return URLUtil.size(this.url);
 	}
 }

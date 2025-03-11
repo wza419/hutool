@@ -1,21 +1,26 @@
 package cn.hutool.core.util;
 
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.convert.Convert;
+
+import java.util.Set;
 
 /**
  * Boolean类型相关工具类
- * 
+ *
  * @author looly
  * @since 4.1.16
  */
 public class BooleanUtil {
 
 	/** 表示为真的字符串 */
-	private static final String[] TRUE_ARRAY = { "true", "yes", "y", "t", "ok", "1", "on", "是", "对", "真", "對", "√"};
+	private static final Set<String> TRUE_SET = CollUtil.newHashSet("true", "yes", "y", "t", "ok", "1", "on", "是", "对", "真", "對", "√");
+	/** 表示为假的字符串 */
+	private static final Set<String> FALSE_SET = CollUtil.newHashSet("false", "no", "n", "f", "0", "off", "否", "错", "假", "錯", "×");
 
 	/**
 	 * 取相反值
-	 * 
+	 *
 	 * @param bool Boolean值
 	 * @return 相反的Boolean值
 	 */
@@ -60,7 +65,7 @@ public class BooleanUtil {
 
 	/**
 	 * 取相反值
-	 * 
+	 *
 	 * @param bool Boolean值
 	 * @return 相反的Boolean值
 	 */
@@ -70,21 +75,43 @@ public class BooleanUtil {
 
 	/**
 	 * 转换字符串为boolean值
-	 * 
+	 *
 	 * @param valueStr 字符串
 	 * @return boolean值
 	 */
 	public static boolean toBoolean(String valueStr) {
 		if (StrUtil.isNotBlank(valueStr)) {
 			valueStr = valueStr.trim().toLowerCase();
-			return ArrayUtil.contains(TRUE_ARRAY, valueStr);
+			return TRUE_SET.contains(valueStr);
 		}
 		return false;
 	}
 
 	/**
+	 * 转换字符串为boolean值<br>
+	 * 如果为["true", "yes", "y", "t", "ok", "1", "on", "是", "对", "真", "對", "√"]，返回{@code true}<br>
+	 * 如果为["false", "no", "n", "f", "0", "off", "否", "错", "假", "錯", "×"]，返回{@code false}<br>
+	 * 其他情况返回{@code null}
+	 *
+	 * @param valueStr 字符串
+	 * @return boolean值
+	 * @since 5.8.1
+	 */
+	public static Boolean toBooleanObject(String valueStr) {
+		if (StrUtil.isNotBlank(valueStr)) {
+			valueStr = valueStr.trim().toLowerCase();
+			if(TRUE_SET.contains(valueStr)){
+				return true;
+			} else if(FALSE_SET.contains(valueStr)){
+				return false;
+			}
+		}
+		return null;
+	}
+
+	/**
 	 * boolean值转为int
-	 * 
+	 *
 	 * @param value Boolean值
 	 * @return int值
 	 */
@@ -94,7 +121,7 @@ public class BooleanUtil {
 
 	/**
 	 * boolean值转为Integer
-	 * 
+	 *
 	 * @param value Boolean值
 	 * @return Integer值
 	 */
@@ -104,7 +131,7 @@ public class BooleanUtil {
 
 	/**
 	 * boolean值转为char
-	 * 
+	 *
 	 * @param value Boolean值
 	 * @return char值
 	 */
@@ -114,7 +141,7 @@ public class BooleanUtil {
 
 	/**
 	 * boolean值转为Character
-	 * 
+	 *
 	 * @param value Boolean值
 	 * @return Character值
 	 */
@@ -124,7 +151,7 @@ public class BooleanUtil {
 
 	/**
 	 * boolean值转为byte
-	 * 
+	 *
 	 * @param value Boolean值
 	 * @return byte值
 	 */
@@ -134,7 +161,7 @@ public class BooleanUtil {
 
 	/**
 	 * boolean值转为Byte
-	 * 
+	 *
 	 * @param value Boolean值
 	 * @return Byte值
 	 */
@@ -144,7 +171,7 @@ public class BooleanUtil {
 
 	/**
 	 * boolean值转为long
-	 * 
+	 *
 	 * @param value Boolean值
 	 * @return long值
 	 */
@@ -154,7 +181,7 @@ public class BooleanUtil {
 
 	/**
 	 * boolean值转为Long
-	 * 
+	 *
 	 * @param value Boolean值
 	 * @return Long值
 	 */
@@ -164,7 +191,7 @@ public class BooleanUtil {
 
 	/**
 	 * boolean值转为short
-	 * 
+	 *
 	 * @param value Boolean值
 	 * @return short值
 	 */
@@ -174,7 +201,7 @@ public class BooleanUtil {
 
 	/**
 	 * boolean值转为Short
-	 * 
+	 *
 	 * @param value Boolean值
 	 * @return Short值
 	 */
@@ -184,7 +211,7 @@ public class BooleanUtil {
 
 	/**
 	 * boolean值转为float
-	 * 
+	 *
 	 * @param value Boolean值
 	 * @return float值
 	 */
@@ -194,7 +221,7 @@ public class BooleanUtil {
 
 	/**
 	 * boolean值转为Float
-	 * 
+	 *
 	 * @param value Boolean值
 	 * @return float值
 	 */
@@ -204,7 +231,7 @@ public class BooleanUtil {
 
 	/**
 	 * boolean值转为double
-	 * 
+	 *
 	 * @param value Boolean值
 	 * @return double值
 	 */
@@ -214,7 +241,7 @@ public class BooleanUtil {
 
 	/**
 	 * boolean值转为double
-	 * 
+	 *
 	 * @param value Boolean值
 	 * @return double值
 	 */
@@ -285,6 +312,28 @@ public class BooleanUtil {
 	}
 
 	/**
+	 * 将boolean转换为字符串
+	 *
+	 * <pre>
+	 *   BooleanUtil.toString(true, "true", "false", null) = "true"
+	 *   BooleanUtil.toString(false, "true", "false", null) = "false"
+	 *   BooleanUtil.toString(null, "true", "false", null) = null
+	 * </pre>
+	 *
+	 * @param bool Boolean值
+	 * @param trueString 当值为 {@code true}时返回此字符串, 可能为 {@code null}
+	 * @param falseString 当值为 {@code false}时返回此字符串, 可能为 {@code null}
+	 * @param nullString 当值为 {@code null}时返回此字符串, 可能为 {@code null}
+	 * @return 结果值
+	 */
+	public static String toString(Boolean bool, String trueString, String falseString, String nullString) {
+		if (bool == null) {
+			return nullString;
+		}
+		return bool ? trueString : falseString;
+	}
+
+	/**
 	 * 对Boolean数组取与
 	 *
 	 * <pre>
@@ -329,8 +378,13 @@ public class BooleanUtil {
 		if (ArrayUtil.isEmpty(array)) {
 			throw new IllegalArgumentException("The Array must not be empty !");
 		}
-		final boolean[] primitive = Convert.convert(boolean[].class, array);
-		return and(primitive);
+
+		for (final Boolean b : array) {
+			if(!isTrue(b)){
+				return false;
+			}
+		}
+		return true;
 	}
 
 	/**
@@ -380,8 +434,13 @@ public class BooleanUtil {
 		if (ArrayUtil.isEmpty(array)) {
 			throw new IllegalArgumentException("The Array must not be empty !");
 		}
-		final boolean[] primitive = Convert.convert(boolean[].class, array);
-		return or(primitive);
+
+		for (final Boolean b : array) {
+			if(isTrue(b)){
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**
@@ -434,7 +493,7 @@ public class BooleanUtil {
 
 	/**
 	 * 给定类是否为Boolean或者boolean
-	 * 
+	 *
 	 * @param clazz 类
 	 * @return 是否为Boolean或者boolean
 	 * @since 4.5.2

@@ -1,9 +1,14 @@
 package cn.hutool.core.date;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
+import java.time.format.TextStyle;
 import java.util.Calendar;
+import java.util.Locale;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class MonthTest {
 
@@ -11,30 +16,65 @@ public class MonthTest {
 	@Test
 	public void getLastDayTest(){
 		int lastDay = Month.of(Calendar.JANUARY).getLastDay(false);
-		Assert.assertEquals(31, lastDay);
+		assertEquals(31, lastDay);
 		lastDay = Month.of(Calendar.FEBRUARY).getLastDay(false);
-		Assert.assertEquals(28, lastDay);
+		assertEquals(28, lastDay);
 		lastDay = Month.of(Calendar.FEBRUARY).getLastDay(true);
-		Assert.assertEquals(29, lastDay);
+		assertEquals(29, lastDay);
 		lastDay = Month.of(Calendar.MARCH).getLastDay(true);
-		Assert.assertEquals(31, lastDay);
+		assertEquals(31, lastDay);
 		lastDay = Month.of(Calendar.APRIL).getLastDay(true);
-		Assert.assertEquals(30, lastDay);
+		assertEquals(30, lastDay);
 		lastDay = Month.of(Calendar.MAY).getLastDay(true);
-		Assert.assertEquals(31, lastDay);
+		assertEquals(31, lastDay);
 		lastDay = Month.of(Calendar.JUNE).getLastDay(true);
-		Assert.assertEquals(30, lastDay);
+		assertEquals(30, lastDay);
 		lastDay = Month.of(Calendar.JULY).getLastDay(true);
-		Assert.assertEquals(31, lastDay);
+		assertEquals(31, lastDay);
 		lastDay = Month.of(Calendar.AUGUST).getLastDay(true);
-		Assert.assertEquals(31, lastDay);
+		assertEquals(31, lastDay);
 		lastDay = Month.of(Calendar.SEPTEMBER).getLastDay(true);
-		Assert.assertEquals(30, lastDay);
+		assertEquals(30, lastDay);
 		lastDay = Month.of(Calendar.OCTOBER).getLastDay(true);
-		Assert.assertEquals(31, lastDay);
+		assertEquals(31, lastDay);
 		lastDay = Month.of(Calendar.NOVEMBER).getLastDay(true);
-		Assert.assertEquals(30, lastDay);
+		assertEquals(30, lastDay);
 		lastDay = Month.of(Calendar.DECEMBER).getLastDay(true);
-		Assert.assertEquals(31, lastDay);
+		assertEquals(31, lastDay);
+	}
+
+	@Test
+	public void toJdkMonthTest(){
+		final java.time.Month month = Month.AUGUST.toJdkMonth();
+		assertEquals(java.time.Month.AUGUST, month);
+	}
+
+	@Test
+	public void toJdkMonthTest2(){
+		assertThrows(IllegalArgumentException.class, Month.UNDECIMBER::toJdkMonth);
+	}
+
+	@Test
+	public void ofTest(){
+		Month month = Month.of("Jan");
+		assertEquals(Month.JANUARY, month);
+
+		month = Month.of("JAN");
+		assertEquals(Month.JANUARY, month);
+
+		month = Month.of("FEBRUARY");
+		assertEquals(Month.FEBRUARY, month);
+
+		month = Month.of("February");
+		assertEquals(Month.FEBRUARY, month);
+
+		month = Month.of(java.time.Month.FEBRUARY);
+		assertEquals(Month.FEBRUARY, month);
+	}
+
+	@Test
+	void getDisplayNameTest() {
+		final String displayName = Month.FEBRUARY.getDisplayName(TextStyle.SHORT, Locale.US);
+		Assertions.assertEquals("Feb", displayName);
 	}
 }

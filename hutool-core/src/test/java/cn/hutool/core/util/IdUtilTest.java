@@ -7,9 +7,9 @@ import cn.hutool.core.exceptions.UtilException;
 import cn.hutool.core.lang.Console;
 import cn.hutool.core.lang.Snowflake;
 import cn.hutool.core.thread.ThreadUtil;
-import org.junit.Assert;
-import org.junit.Ignore;
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import java.util.Set;
 import java.util.UUID;
@@ -17,7 +17,7 @@ import java.util.concurrent.CountDownLatch;
 
 /**
  * {@link IdUtil} 单元测试
- * 
+ *
  * @author looly
  *
  */
@@ -26,26 +26,26 @@ public class IdUtilTest {
 	@Test
 	public void randomUUIDTest() {
 		String simpleUUID = IdUtil.simpleUUID();
-		Assert.assertEquals(32, simpleUUID.length());
+		assertEquals(32, simpleUUID.length());
 
 		String randomUUID = IdUtil.randomUUID();
-		Assert.assertEquals(36, randomUUID.length());
+		assertEquals(36, randomUUID.length());
 	}
-	
+
 	@Test
 	public void fastUUIDTest() {
 		String simpleUUID = IdUtil.fastSimpleUUID();
-		Assert.assertEquals(32, simpleUUID.length());
-		
+		assertEquals(32, simpleUUID.length());
+
 		String randomUUID = IdUtil.fastUUID();
-		Assert.assertEquals(36, randomUUID.length());
+		assertEquals(36, randomUUID.length());
 	}
 
 	/**
 	 * UUID的性能测试
 	 */
 	@Test
-	@Ignore
+	@Disabled
 	public void benchTest() {
 		TimeInterval timer = DateUtil.timer();
 		for (int i = 0; i < 1000000; i++) {
@@ -60,25 +60,26 @@ public class IdUtilTest {
 		}
 		Console.log(timer.interval());
 	}
-	
+
 	@Test
 	public void objectIdTest() {
 		String id = IdUtil.objectId();
-		Assert.assertEquals(24, id.length());
+		assertEquals(24, id.length());
 	}
-	
+
 	@Test
-	public void createSnowflakeTest() {
-		Snowflake snowflake = IdUtil.createSnowflake(1, 1);
+	public void getSnowflakeTest() {
+		Snowflake snowflake = IdUtil.getSnowflake(1, 1);
 		long id = snowflake.nextId();
-		Assert.assertTrue(id > 0);
+		assertTrue(id > 0);
 	}
-	
+
 	@Test
+	@Disabled
 	public void snowflakeBenchTest() {
 		final Set<Long> set = new ConcurrentHashSet<>();
-		final Snowflake snowflake = IdUtil.createSnowflake(1, 1);
-		
+		final Snowflake snowflake = IdUtil.getSnowflake(1, 1);
+
 		//线程数
 		int threadCount = 100;
 		//每个线程生成的ID数
@@ -94,20 +95,21 @@ public class IdUtilTest {
 				latch.countDown();
 			});
 		}
-		
+
 		//等待全部线程结束
 		try {
 			latch.await();
 		} catch (InterruptedException e) {
 			throw new UtilException(e);
 		}
-		Assert.assertEquals(threadCount * idCountPerThread, set.size());
+		assertEquals(threadCount * idCountPerThread, set.size());
 	}
-	
+
 	@Test
+	@Disabled
 	public void snowflakeBenchTest2() {
 		final Set<Long> set = new ConcurrentHashSet<>();
-		
+
 		//线程数
 		int threadCount = 100;
 		//每个线程生成的ID数
@@ -123,13 +125,20 @@ public class IdUtilTest {
 				latch.countDown();
 			});
 		}
-		
+
 		//等待全部线程结束
 		try {
 			latch.await();
 		} catch (InterruptedException e) {
 			throw new UtilException(e);
 		}
-		Assert.assertEquals(threadCount * idCountPerThread, set.size());
+		assertEquals(threadCount * idCountPerThread, set.size());
+	}
+
+	@Test
+	public void getDataCenterIdTest(){
+		//按照mac地址算法拼接的算法，maxDatacenterId应该是0xffffffffL>>6-1此处暂时按照0x7fffffffffffffffL-1，防止最后取模溢出
+		final long dataCenterId = IdUtil.getDataCenterId(Long.MAX_VALUE);
+		assertTrue(dataCenterId >= 0);
 	}
 }

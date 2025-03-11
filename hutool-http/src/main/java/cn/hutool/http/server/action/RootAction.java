@@ -2,7 +2,6 @@ package cn.hutool.http.server.action;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.lang.Console;
 import cn.hutool.http.server.HttpServerRequest;
 import cn.hutool.http.server.HttpServerResponse;
 
@@ -65,6 +64,7 @@ public class RootAction implements Action {
 	@Override
 	public void doAction(HttpServerRequest request, HttpServerResponse response) {
 		final String path = request.getPath();
+
 		File file = FileUtil.file(rootDir, path);
 		if (file.exists()) {
 			if (file.isDirectory()) {
@@ -73,14 +73,16 @@ public class RootAction implements Action {
 					file = FileUtil.file(file, indexFileName);
 					if (file.exists() && file.isFile()) {
 						response.write(file);
+						return;
 					}
 				}
 			} else{
-				response.write(file);
+				final String name = request.getParam("name");
+				response.write(file, name);
+				return;
 			}
 		}
 
-		Console.log(file.getAbsolutePath());
 		response.send404("404 Not Found !");
 	}
 }

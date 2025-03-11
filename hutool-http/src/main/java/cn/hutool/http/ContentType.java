@@ -39,12 +39,21 @@ public enum ContentType {
 	/**
 	 * text/html编码
 	 */
-	TEXT_HTML("text/html");
+	TEXT_HTML("text/html"),
+	/**
+	 * application/octet-stream编码
+	 */
+	OCTET_STREAM("application/octet-stream"),
+	/**
+	 * text/event-stream编码
+	 */
+	EVENT_STREAM("text/event-stream");
 
 	private final String value;
 
 	/**
 	 * 构造
+	 *
 	 * @param value ContentType值
 	 */
 	ContentType(String value) {
@@ -77,7 +86,7 @@ public enum ContentType {
 	}
 
 	/**
-	 * 是否为默认Content-Type，默认包括<code>null</code>和application/x-www-form-urlencoded
+	 * 是否为默认Content-Type，默认包括{@code null}和application/x-www-form-urlencoded
 	 *
 	 * @param contentType 内容类型
 	 * @return 是否为默认Content-Type
@@ -111,7 +120,7 @@ public enum ContentType {
 	public static ContentType get(String body) {
 		ContentType contentType = null;
 		if (StrUtil.isNotBlank(body)) {
-			char firstChar = body.charAt(0);
+			char firstChar = StrUtil.trimStart(body).charAt(0);
 			switch (firstChar) {
 				case '{':
 				case '[':
@@ -140,5 +149,17 @@ public enum ContentType {
 	 */
 	public static String build(String contentType, Charset charset) {
 		return StrUtil.format("{};charset={}", contentType, charset.name());
+	}
+
+	/**
+	 * 输出Content-Type字符串，附带编码信息
+	 *
+	 * @param contentType Content-Type 枚举类型
+	 * @param charset     编码
+	 * @return Content-Type字符串
+	 * @since 5.7.15
+	 */
+	public static String build(ContentType contentType, Charset charset) {
+		return build(contentType.getValue(), charset);
 	}
 }

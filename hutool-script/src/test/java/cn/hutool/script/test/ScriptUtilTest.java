@@ -1,8 +1,10 @@
 package cn.hutool.script.test;
 
+import cn.hutool.core.io.resource.ResourceUtil;
 import cn.hutool.script.ScriptRuntimeException;
 import cn.hutool.script.ScriptUtil;
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
 
 import javax.script.CompiledScript;
 import javax.script.ScriptEngine;
@@ -10,7 +12,7 @@ import javax.script.ScriptException;
 
 /**
  * 脚本单元测试类
- * 
+ *
  * @author looly
  *
  */
@@ -29,6 +31,12 @@ public class ScriptUtilTest {
 	@Test
 	public void evalTest() {
 		ScriptUtil.eval("print('Script test!');");
+	}
+
+	@Test
+	public void invokeTest() {
+		final Object result = ScriptUtil.invoke(ResourceUtil.readUtf8Str("filter1.js"), "filter1", 2, 1);
+		assertTrue((Boolean) result);
 	}
 
 	@Test

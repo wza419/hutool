@@ -1,10 +1,11 @@
 package cn.hutool.crypto.asymmetric;
 
 import cn.hutool.core.lang.Assert;
+import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.HexUtil;
 import cn.hutool.crypto.BCUtil;
 import cn.hutool.crypto.CryptoException;
-import cn.hutool.crypto.KeyUtil;
+import cn.hutool.crypto.ECKeyUtil;
 import cn.hutool.crypto.SecureUtil;
 import org.bouncycastle.crypto.CipherParameters;
 import org.bouncycastle.crypto.Digest;
@@ -19,19 +20,31 @@ import org.bouncycastle.crypto.signers.DSAEncoding;
 import org.bouncycastle.crypto.signers.PlainDSAEncoding;
 import org.bouncycastle.crypto.signers.SM2Signer;
 import org.bouncycastle.crypto.signers.StandardDSAEncoding;
+import org.bouncycastle.util.BigIntegers;
+import org.bouncycastle.util.encoders.Hex;
 
+import java.math.BigInteger;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 
 /**
- * 国密SM2算法实现，基于BC库<br>
+ * 国密SM2非对称算法实现，基于BC库<br>
  * SM2算法只支持公钥加密，私钥解密<br>
  * 参考：https://blog.csdn.net/pridas/article/details/86118774
+ *
+ * <p>
+ * 国密算法包括：
+ * <ol>
+ *     <li>非对称加密和签名：SM2</li>
+ *     <li>摘要签名算法：SM3</li>
+ *     <li>对称加密：SM4</li>
+ * </ol>
  *
  * @author looly
  * @since 4.3.2
  */
 public class SM2 extends AbstractAsymmetricCrypto<SM2> {
+	private static final long serialVersionUID = 1L;
 
 	/**
 	 * 算法EC
@@ -62,8 +75,8 @@ public class SM2 extends AbstractAsymmetricCrypto<SM2> {
 	 * 私钥和公钥同时为空时生成一对新的私钥和公钥<br>
 	 * 私钥和公钥可以单独传入一个，如此则只能使用此钥匙来做加密或者解密
 	 *
-	 * @param privateKeyStr 私钥Hex或Base64表示
-	 * @param publicKeyStr  公钥Hex或Base64表示
+	 * @param privateKeyStr 私钥Hex或Base64表示，必须使用PKCS#8规范
+	 * @param publicKeyStr  公钥Hex或Base64表示，必须使用X509规范
 	 */
 	public SM2(String privateKeyStr, String publicKeyStr) {
 		this(SecureUtil.decode(privateKeyStr), SecureUtil.decode(publicKeyStr));
@@ -74,13 +87,13 @@ public class SM2 extends AbstractAsymmetricCrypto<SM2> {
 	 * 私钥和公钥同时为空时生成一对新的私钥和公钥<br>
 	 * 私钥和公钥可以单独传入一个，如此则只能使用此钥匙来做加密或者解密
 	 *
-	 * @param privateKey 私钥
-	 * @param publicKey  公钥
+	 * @param privateKey 私钥，可以使用PKCS#8、D值或PKCS#1规范
+	 * @param publicKey  公钥，可以使用X509、Q值或PKCS#1规范
 	 */
 	public SM2(byte[] privateKey, byte[] publicKey) {
-		this(//
-				KeyUtil.generatePrivateKey(ALGORITHM_SM2, privateKey), //
-				KeyUtil.generatePublicKey(ALGORITHM_SM2, publicKey)//
+		this(
+				ECKeyUtil.decodePrivateKeyParams(privateKey),
+				ECKeyUtil.decodePublicKeyParams(publicKey)
 		);
 	}
 
@@ -135,8 +148,8 @@ public class SM2 extends AbstractAsymmetricCrypto<SM2> {
 	 * 私钥和公钥同时为空时生成一对新的私钥和公钥<br>
 	 * 私钥和公钥可以单独传入一个，如此则只能使用此钥匙来做加密或者解密
 	 *
-	 * @param privateKeyParams 私钥
-	 * @param publicKeyParams  公钥
+	 * @param privateKeyParams 私钥，可以为null
+	 * @param publicKeyParams  公钥，可以为null
 	 */
 	public SM2(ECPrivateKeyParameters privateKeyParams, ECPublicKeyParameters publicKeyParams) {
 		super(ALGORITHM_SM2, null, null);
@@ -173,12 +186,30 @@ public class SM2 extends AbstractAsymmetricCrypto<SM2> {
 	// --------------------------------------------------------------------------------- Encrypt
 
 	/**
-	 * 加密，SM2非对称加密的结果由C1,C2,C3三部分组成，其中：
+	 * 使用公钥加密，SM2非对称加密的结果由C1,C3,C2三部分组成，其中：
 	 *
 	 * <pre>
 	 * C1 生成随机数的计算出的椭圆曲线点
-	 * C2 密文数据
 	 * C3 SM3的摘要值
+	 * C2 密文数据
+	 * </pre>
+	 *
+	 * @param data    被加密的bytes
+	 * @return 加密后的bytes
+	 * @throws CryptoException 包括InvalidKeyException和InvalidCipherTextException的包装异常
+	 * @since 5.7.10
+	 */
+	public byte[] encrypt(byte[] data) throws CryptoException {
+		return encrypt(data, KeyType.PublicKey);
+	}
+
+	/**
+	 * 加密，SM2非对称加密的结果由C1,C3,C2三部分组成，其中：
+	 *
+	 * <pre>
+	 * C1 生成随机数的计算出的椭圆曲线点
+	 * C3 SM3的摘要值
+	 * C2 密文数据
 	 * </pre>
 	 *
 	 * @param data    被加密的bytes
@@ -225,6 +256,18 @@ public class SM2 extends AbstractAsymmetricCrypto<SM2> {
 	// --------------------------------------------------------------------------------- Decrypt
 
 	/**
+	 * 使用私钥解密
+	 *
+	 * @param data    SM2密文，实际包含三部分：ECC公钥、真正的密文、公钥和原文的SM3-HASH值
+	 * @return 加密后的bytes
+	 * @throws CryptoException 包括InvalidKeyException和InvalidCipherTextException的包装异常
+	 * @since 5.7.10
+	 */
+	public byte[] decrypt(byte[] data) throws CryptoException {
+		return decrypt(data, KeyType.PrivateKey);
+	}
+
+	/**
 	 * 解密
 	 *
 	 * @param data    SM2密文，实际包含三部分：ECC公钥、真正的密文、公钥和原文的SM3-HASH值
@@ -250,6 +293,18 @@ public class SM2 extends AbstractAsymmetricCrypto<SM2> {
 	 * @since 5.1.6
 	 */
 	public byte[] decrypt(byte[] data, CipherParameters privateKeyParameters) throws CryptoException {
+		Assert.isTrue(data.length > 1, "Invalid SM2 cipher text, must be at least 1 byte long");
+		// 检查数据，gmssl等库生成的密文不包含04前缀（非压缩数据标识），此处检查并补充
+		// 参考：https://blog.csdn.net/softt/article/details/139978608
+		// 根据公钥压缩形态不同，密文分为两种压缩形式：
+		// C1( 03 + X ) + C3（32个字节）+ C2
+		// C1( 02 + X ) + C3（32个字节）+ C2
+		// 非压缩公钥正常形态为04 + X  + Y，由于各个算法库差异，04有时候会省略
+		// 非压缩密文正常形态为04 + C1 + C3 + C2
+		if (data[0] != 0x04 && data[0] != 0x02 && data[0] != 0x03) {
+			data = (byte[]) ArrayUtil.insert(data, 0, 0x04);
+		}
+
 		lock.lock();
 		final SM2Engine engine = getEngine();
 		try {
@@ -269,18 +324,20 @@ public class SM2 extends AbstractAsymmetricCrypto<SM2> {
 	 * @param dataHex 被签名的数据数据
 	 * @return 签名
 	 */
-	public String signHex(String dataHex) {
+	public String signHexFromHex(String dataHex) {
 		return signHex(dataHex, null);
 	}
 
 	/**
 	 * 用私钥对信息生成数字签名
 	 *
-	 * @param data 加密数据
+	 * @param dataHex 被签名的数据数据
 	 * @return 签名
+	 * @deprecated 歧义，使用{@link #signHexFromHex(String)}
 	 */
-	public byte[] sign(byte[] data) {
-		return sign(data, null);
+	@Deprecated
+	public String signHex(String dataHex) {
+		return signHex(dataHex, null);
 	}
 
 	/**
@@ -290,12 +347,37 @@ public class SM2 extends AbstractAsymmetricCrypto<SM2> {
 	 * @param idHex   可以为null，若为null，则默认withId为字节数组:"1234567812345678".getBytes()
 	 * @return 签名
 	 */
-	public String signHex(String dataHex, String idHex) {
+	public String signHexFromHex(String dataHex, String idHex) {
 		return HexUtil.encodeHexStr(sign(HexUtil.decodeHex(dataHex), HexUtil.decodeHex(idHex)));
 	}
 
 	/**
 	 * 用私钥对信息生成数字签名
+	 *
+	 * @param dataHex 被签名的数据数据
+	 * @param idHex   可以为null，若为null，则默认withId为字节数组:"1234567812345678".getBytes()
+	 * @return 签名
+	 * @deprecated 歧义，使用{@link #signHexFromHex(String, String)}
+	 */
+	@Deprecated
+	public String signHex(String dataHex, String idHex) {
+		return HexUtil.encodeHexStr(sign(HexUtil.decodeHex(dataHex), HexUtil.decodeHex(idHex)));
+	}
+
+	/**
+	 * 用私钥对信息生成数字签名，签名格式为ASN1<br>
+	 * * 在硬件签名中，返回结果为R+S，可以通过调用{@link cn.hutool.crypto.SmUtil#rsAsn1ToPlain(byte[])}方法转换之。
+	 *
+	 * @param data 加密数据
+	 * @return 签名
+	 */
+	public byte[] sign(byte[] data) {
+		return sign(data, null);
+	}
+
+	/**
+	 * 用私钥对信息生成数字签名，签名格式为ASN1<br>
+	 * 在硬件签名中，返回结果为R+S，可以通过调用{@link cn.hutool.crypto.SmUtil#rsAsn1ToPlain(byte[])}方法转换之。
 	 *
 	 * @param data 被签名的数据数据
 	 * @param id   可以为null，若为null，则默认withId为字节数组:"1234567812345678".getBytes()
@@ -322,7 +404,7 @@ public class SM2 extends AbstractAsymmetricCrypto<SM2> {
 	/**
 	 * 用公钥检验数字签名的合法性
 	 *
-	 * @param dataHex 数据签名后的数据
+	 * @param dataHex 的数据
 	 * @param signHex 签名
 	 * @return 是否验证通过
 	 * @since 5.2.0
@@ -334,7 +416,7 @@ public class SM2 extends AbstractAsymmetricCrypto<SM2> {
 	/**
 	 * 用公钥检验数字签名的合法性
 	 *
-	 * @param data 签名后的数据
+	 * @param data 数据
 	 * @param sign 签名
 	 * @return 是否验证通过
 	 */
@@ -345,7 +427,7 @@ public class SM2 extends AbstractAsymmetricCrypto<SM2> {
 	/**
 	 * 用公钥检验数字签名的合法性
 	 *
-	 * @param dataHex 数据签名后的数据的Hex值
+	 * @param dataHex 数据的Hex值
 	 * @param signHex 签名的Hex值
 	 * @param idHex   ID的Hex值
 	 * @return 是否验证通过
@@ -358,7 +440,7 @@ public class SM2 extends AbstractAsymmetricCrypto<SM2> {
 	/**
 	 * 用公钥检验数字签名的合法性
 	 *
-	 * @param data 数据签名后的数据
+	 * @param data 数据
 	 * @param sign 签名
 	 * @param id   可以为null，若为null，则默认withId为字节数组:"1234567812345678".getBytes()
 	 * @return 是否验证通过
@@ -471,6 +553,47 @@ public class SM2 extends AbstractAsymmetricCrypto<SM2> {
 		return this;
 	}
 
+	/**
+	 * 获得私钥D值（编码后的私钥）
+	 *
+	 * @return D值
+	 * @since 5.5.9
+	 */
+	public byte[] getD() {
+		return BigIntegers.asUnsignedByteArray(32,getDBigInteger());
+	}
+
+	/**
+	 * 获得私钥D值（编码后的私钥）
+	 *
+	 * @return D值
+	 * @since 5.7.17
+	 */
+	public String getDHex() {
+		return new String(Hex.encode(getD()));
+	}
+
+	/**
+	 * 获得私钥D值
+	 *
+	 * @return D值
+	 * @since 5.7.17
+	 */
+	public BigInteger getDBigInteger() {
+		return this.privateKeyParams.getD();
+	}
+
+	/**
+	 * 获得公钥Q值（编码后的公钥）
+	 *
+	 * @param isCompressed 是否压缩
+	 * @return Q值
+	 * @since 5.5.9
+	 */
+	public byte[] getQ(boolean isCompressed) {
+		return this.publicKeyParams.getQ().getEncoded(isCompressed);
+	}
+
 	// ------------------------------------------------------------------------------------------------------------------------- Private method start
 
 	/**
@@ -499,8 +622,10 @@ public class SM2 extends AbstractAsymmetricCrypto<SM2> {
 	 */
 	private SM2Engine getEngine() {
 		if (null == this.engine) {
+			Assert.notNull(this.digest, "digest must be not null !");
 			this.engine = new SM2Engine(this.digest, this.mode);
 		}
+		this.digest.reset();
 		return this.engine;
 	}
 
@@ -511,8 +636,10 @@ public class SM2 extends AbstractAsymmetricCrypto<SM2> {
 	 */
 	private SM2Signer getSigner() {
 		if (null == this.signer) {
+			Assert.notNull(this.digest, "digest must be not null !");
 			this.signer = new SM2Signer(this.encoding, this.digest);
 		}
+		this.digest.reset();
 		return this.signer;
 	}
 	// ------------------------------------------------------------------------------------------------------------------------- Private method end

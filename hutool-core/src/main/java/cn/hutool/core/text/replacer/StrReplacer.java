@@ -1,9 +1,10 @@
 package cn.hutool.core.text.replacer;
 
-import java.io.Serializable;
-
 import cn.hutool.core.lang.Replacer;
 import cn.hutool.core.text.StrBuilder;
+import cn.hutool.core.util.StrUtil;
+
+import java.io.Serializable;
 
 /**
  * 抽象字符串替换类<br>
@@ -27,19 +28,22 @@ public abstract class StrReplacer implements Replacer<CharSequence>, Serializabl
 
 	@Override
 	public CharSequence replace(CharSequence t) {
+		if(StrUtil.isEmpty(t)){
+			return t;
+		}
 		final int len = t.length();
-		final StrBuilder strBuillder = StrBuilder.create(len);
+		final StrBuilder builder = StrBuilder.create(len);
 		int pos = 0;//当前位置
 		int consumed;//处理过的字符数
 		while (pos < len) {
-			consumed = replace(t, pos, strBuillder);
+			consumed = replace(t, pos, builder);
 			if (0 == consumed) {
 				//0表示未处理或替换任何字符，原样输出本字符并从下一个字符继续
-				strBuillder.append(t.charAt(pos));
+				builder.append(t.charAt(pos));
 				pos++;
 			}
 			pos += consumed;
 		}
-		return strBuillder;
+		return builder;
 	}
 }

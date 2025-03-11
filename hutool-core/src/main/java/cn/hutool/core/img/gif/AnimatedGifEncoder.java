@@ -5,9 +5,10 @@ import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
 import java.io.BufferedOutputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 /**
  * 动态GIF动画生成器，可生成一个或多个帧的GIF。
@@ -147,8 +148,8 @@ public class AnimatedGifEncoder {
 	/**
 	 * Adds next GIF frame.  The frame is not written immediately, but is
 	 * actually deferred until the next frame is received so that timing
-	 * data can be inserted.  Invoking <code>finish()</code> flushes all
-	 * frames.  If <code>setSize</code> was not invoked, the size of the
+	 * data can be inserted.  Invoking {@code finish()} flushes all
+	 * frames.  If {@code setSize} was not invoked, the size of the
 	 * first image is used for all subsequent frames.
 	 *
 	 * @param im BufferedImage containing frame to write.
@@ -225,7 +226,7 @@ public class AnimatedGifEncoder {
 
 	/**
 	 * Sets frame rate in frames per second.  Equivalent to
-	 * <code>setDelay(1000/fps)</code>.
+	 * {@code setDelay(1000/fps)}.
 	 *
 	 * @param fps float frame rate (frames per second)
 	 */
@@ -296,7 +297,7 @@ public class AnimatedGifEncoder {
 	public boolean start(String file) {
 		boolean ok;
 		try {
-			out = new BufferedOutputStream(new FileOutputStream(file));
+			out = new BufferedOutputStream(Files.newOutputStream(Paths.get(file)));
 			ok = start(out);
 			closeStream = true;
 		} catch (IOException e) {

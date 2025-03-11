@@ -1,47 +1,42 @@
 package cn.hutool.core.net;
 
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.collection.EnumerationIter;
 import cn.hutool.core.exceptions.UtilException;
 import cn.hutool.core.io.IORuntimeException;
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.lang.Filter;
+import cn.hutool.core.util.JNDIUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
 
+import javax.naming.NamingException;
+import javax.naming.directory.Attribute;
+import javax.naming.directory.Attributes;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.net.DatagramSocket;
-import java.net.HttpCookie;
-import java.net.IDN;
-import java.net.Inet4Address;
-import java.net.Inet6Address;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.NetworkInterface;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.net.SocketException;
-import java.net.URL;
-import java.net.UnknownHostException;
+import java.math.BigInteger;
+import java.net.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.*;
 
 /**
  * 网络相关工具
  *
- * @author xiaoleilu
+ * @author looly
  */
 public class NetUtil {
 
-	public final static String LOCAL_IP = "127.0.0.1";
+	/**
+	 * 本地IPv4地址
+	 */
+	public final static String LOCAL_IP = Ipv4Util.LOCAL_IP;
+
+	/**
+	 * 本地主机名称
+	 */
+	public static String localhostName;
 
 	/**
 	 * 默认最小端口，1024
@@ -72,6 +67,73 @@ public class NetUtil {
 	 */
 	public static long ipv4ToLong(String strIP) {
 		return Ipv4Util.ipv4ToLong(strIP);
+	}
+
+	/**
+	 * 将IPv6地址字符串转为大整数
+	 *
+	 * @param ipv6Str 字符串
+	 * @return 大整数, 如发生异常返回 null
+	 * @since 5.5.7
+	 * @deprecated 拼写错误，请使用{@link #ipv6ToBigInteger(String)}
+	 */
+	@Deprecated
+	public static BigInteger ipv6ToBitInteger(String ipv6Str) {
+		return ipv6ToBigInteger(ipv6Str);
+	}
+
+	/**
+	 * 将IPv6地址字符串转为大整数
+	 *
+	 * @param ipv6Str 字符串
+	 * @return 大整数, 如发生异常返回 null
+	 * @since 5.5.7
+	 */
+	public static BigInteger ipv6ToBigInteger(String ipv6Str) {
+		try {
+			InetAddress address = InetAddress.getByName(ipv6Str);
+			if (address instanceof Inet6Address) {
+				return new BigInteger(1, address.getAddress());
+			}
+		} catch (UnknownHostException ignore) {
+		}
+		return null;
+	}
+
+	/**
+	 * 将大整数转换成ipv6字符串
+	 *
+	 * @param bigInteger 大整数
+	 * @return IPv6字符串, 如发生异常返回 null
+	 * @since 5.5.7
+	 */
+	public static String bigIntegerToIPv6(BigInteger bigInteger) {
+		// 确保 BigInteger 在 IPv6 地址范围内
+		if (bigInteger.compareTo(BigInteger.ZERO) < 0 || bigInteger.compareTo(new BigInteger("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", 16)) > 0) {
+			throw new IllegalArgumentException("BigInteger value is out of IPv6 range");
+		}
+
+		// 将 BigInteger 转换为 16 字节的字节数组
+		byte[] bytes = bigInteger.toByteArray();
+		if (bytes.length > 16) {
+			// 如果字节数组长度大于 16，去掉前导零
+			int offset = bytes[0] == 0 ? 1 : 0;
+			final byte[] newBytes = new byte[16];
+			System.arraycopy(bytes, offset, newBytes, 0, 16);
+			bytes = newBytes;
+		} else if (bytes.length < 16) {
+			// 如果字节数组长度小于 16，前面补零
+			byte[] paddedBytes = new byte[16];
+			System.arraycopy(bytes, 0, paddedBytes, 16 - bytes.length, bytes.length);
+			bytes = paddedBytes;
+		}
+
+		// 将字节数组转换为 IPv6 地址字符串
+		try {
+			return Inet6Address.getByAddress(bytes).getHostAddress();
+		} catch (UnknownHostException e) {
+			return null;
+		}
 	}
 
 	/**
@@ -188,27 +250,21 @@ public class NetUtil {
 	}
 
 	/**
-	 * 判定是否为内网IP<br>
-	 * 私有IP：A类 10.0.0.0-10.255.255.255 B类 172.16.0.0-172.31.255.255 C类 192.168.0.0-192.168.255.255 当然，还有127这个网段是环回地址
+	 * 判定是否为内网IPv4<br>
+	 * 私有IP：
+	 * <pre>
+	 * A类 10.0.0.0-10.255.255.255
+	 * B类 172.16.0.0-172.31.255.255
+	 * C类 192.168.0.0-192.168.255.255
+	 * </pre>
+	 * 当然，还有127这个网段是环回地址
 	 *
 	 * @param ipAddress IP地址
 	 * @return 是否为内网IP
+	 * @see Ipv4Util#isInnerIP(String)
 	 */
 	public static boolean isInnerIP(String ipAddress) {
-		boolean isInnerIp;
-		long ipNum = NetUtil.ipv4ToLong(ipAddress);
-
-		long aBegin = NetUtil.ipv4ToLong("10.0.0.0");
-		long aEnd = NetUtil.ipv4ToLong("10.255.255.255");
-
-		long bBegin = NetUtil.ipv4ToLong("172.16.0.0");
-		long bEnd = NetUtil.ipv4ToLong("172.31.255.255");
-
-		long cBegin = NetUtil.ipv4ToLong("192.168.0.0");
-		long cEnd = NetUtil.ipv4ToLong("192.168.255.255");
-
-		isInnerIp = isInner(ipNum, aBegin, aEnd) || isInner(ipNum, bBegin, bEnd) || isInner(ipNum, cBegin, cEnd) || ipAddress.equals(LOCAL_IP);
-		return isInnerIp;
+		return Ipv4Util.isInnerIP(ipAddress);
 	}
 
 	/**
@@ -294,7 +350,7 @@ public class NetUtil {
 	 * 获取指定名称的网卡信息
 	 *
 	 * @param name 网络接口名，例如Linux下默认是eth0
-	 * @return 网卡，未找到返回<code>null</code>
+	 * @return 网卡，未找到返回{@code null}
 	 * @since 5.0.7
 	 */
 	public static NetworkInterface getNetworkInterface(String name) {
@@ -319,7 +375,7 @@ public class NetUtil {
 	/**
 	 * 获取本机所有网卡
 	 *
-	 * @return 所有网卡，异常返回<code>null</code>
+	 * @return 所有网卡，异常返回{@code null}
 	 * @since 3.0.1
 	 */
 	public static Collection<NetworkInterface> getNetworkInterfaces() {
@@ -393,6 +449,17 @@ public class NetUtil {
 	 * @since 4.5.17
 	 */
 	public static LinkedHashSet<InetAddress> localAddressList(Filter<InetAddress> addressFilter) {
+		return localAddressList(null, addressFilter);
+	}
+
+	/**
+	 * 获取所有满足过滤条件的本地IP地址对象
+	 *
+	 * @param addressFilter          过滤器，null表示不过滤，获取所有地址
+	 * @param networkInterfaceFilter 过滤器，null表示不过滤，获取所有网卡
+	 * @return 过滤后的地址对象列表
+	 */
+	public static LinkedHashSet<InetAddress> localAddressList(Filter<NetworkInterface> networkInterfaceFilter, Filter<InetAddress> addressFilter) {
 		Enumeration<NetworkInterface> networkInterfaces;
 		try {
 			networkInterfaces = NetworkInterface.getNetworkInterfaces();
@@ -408,6 +475,9 @@ public class NetUtil {
 
 		while (networkInterfaces.hasMoreElements()) {
 			final NetworkInterface networkInterface = networkInterfaces.nextElement();
+			if (networkInterfaceFilter != null && false == networkInterfaceFilter.accept(networkInterface)) {
+				continue;
+			}
 			final Enumeration<InetAddress> inetAddresses = networkInterface.getInetAddresses();
 			while (inetAddresses.hasMoreElements()) {
 				final InetAddress inetAddress = inetAddresses.nextElement();
@@ -423,11 +493,11 @@ public class NetUtil {
 	/**
 	 * 获取本机网卡IP地址，这个地址为所有网卡中非回路地址的第一个<br>
 	 * 如果获取失败调用 {@link InetAddress#getLocalHost()}方法获取。<br>
-	 * 此方法不会抛出异常，获取失败将返回<code>null</code><br>
+	 * 此方法不会抛出异常，获取失败将返回{@code null}<br>
 	 * <p>
 	 * 参考：http://stackoverflow.com/questions/9481865/getting-the-ip-address-of-the-current-machine-using-java
 	 *
-	 * @return 本机网卡IP地址，获取失败返回<code>null</code>
+	 * @return 本机网卡IP地址，获取失败返回{@code null}
 	 * @since 3.0.7
 	 */
 	public static String getLocalhostStr() {
@@ -446,25 +516,35 @@ public class NetUtil {
 	 * 2. 如果无满足要求的地址，调用 {@link InetAddress#getLocalHost()} 获取地址
 	 * </pre>
 	 * <p>
-	 * 此方法不会抛出异常，获取失败将返回<code>null</code><br>
+	 * 此方法不会抛出异常，获取失败将返回{@code null}<br>
 	 * <p>
-	 * 见：https://github.com/looly/hutool/issues/428
+	 * 见：https://github.com/dromara/hutool/issues/428
 	 *
-	 * @return 本机网卡IP地址，获取失败返回<code>null</code>
+	 * @return 本机网卡IP地址，获取失败返回{@code null}
 	 * @since 3.0.1
 	 */
 	public static InetAddress getLocalhost() {
 		final LinkedHashSet<InetAddress> localAddressList = localAddressList(address -> {
 			// 非loopback地址，指127.*.*.*的地址
 			return false == address.isLoopbackAddress()
-					// 非地区本地地址，指10.0.0.0 ~ 10.255.255.255、172.16.0.0 ~ 172.31.255.255、192.168.0.0 ~ 192.168.255.255
-					&& false == address.isSiteLocalAddress()
-					// 需为IPV4地址
-					&& address instanceof Inet4Address;
+				// 需为IPV4地址
+				&& address instanceof Inet4Address;
 		});
 
 		if (CollUtil.isNotEmpty(localAddressList)) {
-			return CollUtil.get(localAddressList, 0);
+			InetAddress address2 = null;
+			for (InetAddress inetAddress : localAddressList) {
+				if (false == inetAddress.isSiteLocalAddress()) {
+					// 非地区本地地址，指10.0.0.0 ~ 10.255.255.255、172.16.0.0 ~ 172.31.255.255、192.168.0.0 ~ 192.168.255.255
+					return inetAddress;
+				} else if (null == address2) {
+					address2 = inetAddress;
+				}
+			}
+
+			if (null != address2) {
+				return address2;
+			}
 		}
 
 		try {
@@ -507,12 +587,7 @@ public class NetUtil {
 			return null;
 		}
 
-		byte[] mac;
-		try {
-			mac = NetworkInterface.getByInetAddress(inetAddress).getHardwareAddress();
-		} catch (SocketException e) {
-			throw new UtilException(e);
-		}
+		final byte[] mac = getHardwareAddress(inetAddress);
 		if (null != mac) {
 			final StringBuilder sb = new StringBuilder();
 			String s;
@@ -526,7 +601,66 @@ public class NetUtil {
 			}
 			return sb.toString();
 		}
+
 		return null;
+	}
+
+	/**
+	 * 获得指定地址信息中的硬件地址
+	 *
+	 * @param inetAddress {@link InetAddress}
+	 * @return 硬件地址
+	 * @since 5.7.3
+	 */
+	public static byte[] getHardwareAddress(InetAddress inetAddress) {
+		if (null == inetAddress) {
+			return null;
+		}
+
+		try {
+			final NetworkInterface networkInterface = NetworkInterface.getByInetAddress(inetAddress);
+			if (null != networkInterface) {
+				return networkInterface.getHardwareAddress();
+			}
+		} catch (SocketException e) {
+			throw new UtilException(e);
+		}
+		return null;
+	}
+
+	/**
+	 * 获得本机物理地址
+	 *
+	 * @return 本机物理地址
+	 * @since 5.7.3
+	 */
+	public static byte[] getLocalHardwareAddress() {
+		return getHardwareAddress(getLocalhost());
+	}
+
+	/**
+	 * 获取主机名称，一次获取会缓存名称<br>
+	 * 注意此方法会触发反向DNS解析，导致阻塞，阻塞时间取决于网络！
+	 *
+	 * @return 主机名称
+	 * @since 5.4.4
+	 */
+	public static String getLocalHostName() {
+		if (StrUtil.isNotBlank(localhostName)) {
+			return localhostName;
+		}
+
+		final InetAddress localhost = getLocalhost();
+
+		if (null != localhost) {
+			String name = localhost.getHostName();
+			if (StrUtil.isEmpty(name)) {
+				name = localhost.getHostAddress();
+			}
+			localhostName = name;
+		}
+
+		return localhostName;
 	}
 
 	/**
@@ -595,14 +729,15 @@ public class NetUtil {
 	 * @since 4.0.6
 	 */
 	public static boolean isInRange(String ip, String cidr) {
-		String[] ips = StrUtil.splitToArray(ip, '.');
-		int ipAddr = (Integer.parseInt(ips[0]) << 24) | (Integer.parseInt(ips[1]) << 16) | (Integer.parseInt(ips[2]) << 8) | Integer.parseInt(ips[3]);
-		int type = Integer.parseInt(cidr.replaceAll(".*/", ""));
-		int mask = 0xFFFFFFFF << (32 - type);
-		String cidrIp = cidr.replaceAll("/.*", "");
-		String[] cidrIps = cidrIp.split("\\.");
-		int cidrIpAddr = (Integer.parseInt(cidrIps[0]) << 24) | (Integer.parseInt(cidrIps[1]) << 16) | (Integer.parseInt(cidrIps[2]) << 8) | Integer.parseInt(cidrIps[3]);
-		return (ipAddr & mask) == (cidrIpAddr & mask);
+		final int maskSplitMarkIndex = cidr.lastIndexOf(Ipv4Util.IP_MASK_SPLIT_MARK);
+		if (maskSplitMarkIndex < 0) {
+			throw new IllegalArgumentException("Invalid cidr: " + cidr);
+		}
+
+		final long mask = (-1L << 32 - Integer.parseInt(cidr.substring(maskSplitMarkIndex + 1)));
+		long cidrIpAddr = ipv4ToLong(cidr.substring(0, maskSplitMarkIndex));
+
+		return (ipv4ToLong(ip) & mask) == (cidrIpAddr & mask);
 	}
 
 	/**
@@ -625,9 +760,9 @@ public class NetUtil {
 	 */
 	public static String getMultistageReverseProxyIp(String ip) {
 		// 多级反向代理检测
-		if (ip != null && ip.indexOf(",") > 0) {
-			final String[] ips = ip.trim().split(",");
-			for (String subIp : ips) {
+		if (ip != null && StrUtil.indexOf(ip, ',') > 0) {
+			final List<String> ips = StrUtil.splitTrim(ip, ',');
+			for (final String subIp : ips) {
 				if (false == isUnknown(subIp)) {
 					ip = subIp;
 					break;
@@ -635,18 +770,6 @@ public class NetUtil {
 			}
 		}
 		return ip;
-	}
-
-	/**
-	 * 检测给定字符串是否为未知，多用于检测HTTP请求相关<br>
-	 *
-	 * @param checkString 被检测的字符串
-	 * @return 是否未知
-	 * @since 4.4.1
-	 * @deprecated 拼写错误，请使用{@link #isUnknown(String)}
-	 */
-	public static boolean isUnknow(String checkString) {
-		return isUnknown(checkString);
 	}
 
 	/**
@@ -708,25 +831,63 @@ public class NetUtil {
 	 * @since 5.3.2
 	 */
 	public static boolean isOpen(InetSocketAddress address, int timeout) {
-		try (Socket sc = new Socket()){
+		try (Socket sc = new Socket()) {
 			sc.connect(address, timeout);
 			return true;
 		} catch (Exception e) {
 			return false;
 		}
 	}
-	// ----------------------------------------------------------------------------------------- Private method start
 
 	/**
-	 * 指定IP的long是否在指定范围内
+	 * 设置全局验证
 	 *
-	 * @param userIp 用户IP
-	 * @param begin  开始IP
-	 * @param end    结束IP
-	 * @return 是否在范围内
+	 * @param user 用户名
+	 * @param pass 密码，考虑安全，此处不使用String
+	 * @since 5.7.2
 	 */
-	private static boolean isInner(long userIp, long begin, long end) {
-		return (userIp >= begin) && (userIp <= end);
+	public static void setGlobalAuthenticator(String user, char[] pass) {
+		setGlobalAuthenticator(new UserPassAuthenticator(user, pass));
 	}
+
+	/**
+	 * 设置全局验证
+	 *
+	 * @param authenticator 验证器
+	 * @since 5.7.2
+	 */
+	public static void setGlobalAuthenticator(Authenticator authenticator) {
+		Authenticator.setDefault(authenticator);
+	}
+
+	/**
+	 * 获取DNS信息，如TXT信息：
+	 *
+	 * <pre class="code">
+	 *     NetUtil.attrNames("hutool.cn", "TXT")
+	 * </pre>
+	 *
+	 * @param hostName  主机域名
+	 * @param attrNames 属性
+	 * @return DNS信息
+	 * @since 5.7.7
+	 */
+	public static List<String> getDnsInfo(String hostName, String... attrNames) {
+		final String uri = StrUtil.addPrefixIfNot(hostName, "dns:");
+		final Attributes attributes = JNDIUtil.getAttributes(uri, attrNames);
+
+		final List<String> infos = new ArrayList<>();
+		for (Attribute attribute : new EnumerationIter<>(attributes.getAll())) {
+			try {
+				infos.add((String) attribute.get());
+			} catch (NamingException ignore) {
+				//ignore
+			}
+		}
+		return infos;
+	}
+
+	// ----------------------------------------------------------------------------------------- Private method start
+
 	// ----------------------------------------------------------------------------------------- Private method end
 }

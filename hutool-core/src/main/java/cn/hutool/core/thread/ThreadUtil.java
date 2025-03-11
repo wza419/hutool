@@ -1,5 +1,7 @@
 package cn.hutool.core.thread;
 
+import cn.hutool.core.util.RuntimeUtil;
+
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletionService;
@@ -8,9 +10,12 @@ import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionHandler;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 /**
  * 线程池工具
@@ -25,13 +30,12 @@ public class ThreadUtil {
 	 *    1. 初始线程数为corePoolSize指定的大小
 	 *    2. 没有最大线程数限制
 	 *    3. 默认使用LinkedBlockingQueue，默认队列大小为1024
-	 *    4. 当运行线程大于corePoolSize放入队列，队列满后抛出异常
 	 * </pre>
 	 *
 	 * @param corePoolSize 同时执行的线程数大小
 	 * @return ExecutorService
 	 */
-		public static ExecutorService newExecutor(int corePoolSize) {
+	public static ThreadPoolExecutor newExecutor(int corePoolSize) {
 		ExecutorBuilder builder = ExecutorBuilder.create();
 		if (corePoolSize > 0) {
 			builder.setCorePoolSize(corePoolSize);
@@ -50,7 +54,7 @@ public class ThreadUtil {
 	 *
 	 * @return ExecutorService
 	 */
-	public static ExecutorService newExecutor() {
+	public static ThreadPoolExecutor newExecutor() {
 		return ExecutorBuilder.create().useSynchronousQueue().build();
 	}
 
@@ -98,7 +102,7 @@ public class ThreadUtil {
 	 * @return {@link ThreadPoolExecutor}
 	 * @since 5.4.1
 	 */
-	public static ExecutorService newExecutor(int corePoolSize, int maximumPoolSize, int maximumQueueSize) {
+	public static ThreadPoolExecutor newExecutor(int corePoolSize, int maximumPoolSize, int maximumQueueSize) {
 		return ExecutorBuilder.create()
 				.setCorePoolSize(corePoolSize)
 				.setMaxPoolSize(maximumPoolSize)
@@ -112,7 +116,7 @@ public class ThreadUtil {
 	 * Blocking Coefficient(阻塞系数) = 阻塞时间／（阻塞时间+使用CPU的时间）<br>
 	 * 计算密集型任务的阻塞系数为0，而IO密集型任务的阻塞系数则接近于1。
 	 * <p>
-	 * see: http://blog.csdn.net/partner4java/article/details/9417663
+	 * see: <a href="http://blog.csdn.net/partner4java/article/details/9417663">http://blog.csdn.net/partner4java/article/details/9417663</a>
 	 *
 	 * @param blockingCoefficient 阻塞系数，阻塞因子介于0~1之间的数，阻塞因子越大，线程池中的线程数越多。
 	 * @return {@link ThreadPoolExecutor}
@@ -124,8 +128,75 @@ public class ThreadUtil {
 		}
 
 		// 最佳的线程数 = CPU可用核心数 / (1 - 阻塞系数)
-		int poolSize = (int) (Runtime.getRuntime().availableProcessors() / (1 - blockingCoefficient));
+		int poolSize = (int) (RuntimeUtil.getProcessorCount() / (1 - blockingCoefficient));
 		return ExecutorBuilder.create().setCorePoolSize(poolSize).setMaxPoolSize(poolSize).setKeepAliveTime(0L).build();
+	}
+
+	/**
+	 * 获取一个新的线程池，默认的策略如下<br>
+	 * <pre>
+	 *     1. 核心线程数与最大线程数为nThreads指定的大小
+	 *     2. 默认使用LinkedBlockingQueue，默认队列大小为1024
+	 *     3. 如果isBlocked为{@code true}，当执行拒绝策略的时候会处于阻塞状态，直到能添加到队列中或者被{@link Thread#interrupt()}中断
+	 * </pre>
+	 *
+	 * @param nThreads         线程池大小
+	 * @param threadNamePrefix 线程名称前缀
+	 * @param isBlocked        是否使用{@link BlockPolicy}策略
+	 * @return ExecutorService
+	 * @author luozongle
+	 * @since 5.8.0
+	 */
+	public static ThreadPoolExecutor newFixedExecutor(int nThreads, String threadNamePrefix, boolean isBlocked) {
+		return newFixedExecutor(nThreads, 1024, threadNamePrefix, isBlocked);
+	}
+
+	/**
+	 * 获取一个新的线程池，默认的策略如下<br>
+	 * <pre>
+	 *     1. 核心线程数与最大线程数为nThreads指定的大小
+	 *     2. 默认使用LinkedBlockingQueue
+	 *     3. 如果isBlocked为{@code true}，当执行拒绝策略的时候会处于阻塞状态，直到能添加到队列中或者被{@link Thread#interrupt()}中断
+	 * </pre>
+	 *
+	 * @param nThreads         线程池大小
+	 * @param maximumQueueSize 队列大小
+	 * @param threadNamePrefix 线程名称前缀
+	 * @param isBlocked        是否使用{@link BlockPolicy}策略
+	 * @return ExecutorService
+	 * @author luozongle
+	 * @since 5.8.0
+	 */
+	public static ThreadPoolExecutor newFixedExecutor(int nThreads, int maximumQueueSize, String threadNamePrefix, boolean isBlocked) {
+		return newFixedExecutor(nThreads, maximumQueueSize, threadNamePrefix,
+				(isBlocked ? RejectPolicy.BLOCK : RejectPolicy.ABORT).getValue());
+	}
+
+	/**
+	 * 获得一个新的线程池，默认策略如下<br>
+	 * <pre>
+	 *     1. 核心线程数与最大线程数为nThreads指定的大小
+	 *     2. 默认使用LinkedBlockingQueue
+	 * </pre>
+	 *
+	 * @param nThreads         线程池大小
+	 * @param maximumQueueSize 队列大小
+	 * @param threadNamePrefix 线程名称前缀
+	 * @param handler          拒绝策略
+	 * @return ExecutorService
+	 * @author luozongle
+	 * @since 5.8.0
+	 */
+	public static ThreadPoolExecutor newFixedExecutor(int nThreads,
+												   int maximumQueueSize,
+												   String threadNamePrefix,
+												   RejectedExecutionHandler handler) {
+		return ExecutorBuilder.create()
+				.setCorePoolSize(nThreads).setMaxPoolSize(nThreads)
+				.setWorkQueue(new LinkedBlockingQueue<>(maximumQueueSize))
+				.setThreadFactory(createThreadFactory(threadNamePrefix))
+				.setHandler(handler)
+				.build();
 	}
 
 	/**
@@ -144,7 +215,7 @@ public class ThreadUtil {
 	 * @param isDaemon 是否守护线程。守护线程会在主线程结束后自动结束
 	 * @return 执行的方法体
 	 */
-	public static Runnable execAsync(final Runnable runnable, boolean isDaemon) {
+	public static Runnable execAsync(Runnable runnable, boolean isDaemon) {
 		Thread thread = new Thread(runnable);
 		thread.setDaemon(isDaemon);
 		thread.start();
@@ -313,18 +384,14 @@ public class ThreadUtil {
 	public static boolean safeSleep(long millis) {
 		long done = 0;
 		long before;
-		long spendTime;
-		while (done >= 0 && done < millis) {
-			before = System.currentTimeMillis();
-			if (false == sleep(millis - done)) {
+		// done表示实际花费的时间，确保实际花费时间大于应该sleep的时间
+		while (done < millis) {
+			before = System.nanoTime();
+			if (!sleep(millis - done)) {
 				return false;
 			}
-			spendTime = System.currentTimeMillis() - before;
-			if (spendTime <= 0) {
-				// Sleep花费时间为0或者负数，说明系统时间被拨动
-				break;
-			}
-			done += spendTime;
+			// done始终为正
+			done += (System.nanoTime() - before) / 1_000_000;
 		}
 		return true;
 	}
@@ -366,6 +433,19 @@ public class ThreadUtil {
 	}
 
 	/**
+	 * 创建本地线程对象
+	 *
+	 * @param <T>      持有对象类型
+	 * @param supplier 初始化线程对象函数
+	 * @return 本地线程
+	 * @see ThreadLocal#withInitial(Supplier)
+	 * @since 5.6.7
+	 */
+	public static <T> ThreadLocal<T> createThreadLocal(Supplier<? extends T> supplier) {
+		return ThreadLocal.withInitial(supplier);
+	}
+
+	/**
 	 * 创建ThreadFactoryBuilder
 	 *
 	 * @return ThreadFactoryBuilder
@@ -374,6 +454,18 @@ public class ThreadUtil {
 	 */
 	public static ThreadFactoryBuilder createThreadFactoryBuilder() {
 		return ThreadFactoryBuilder.create();
+	}
+
+	/**
+	 * 创建自定义线程名称前缀的{@link ThreadFactory}
+	 *
+	 * @param threadNamePrefix 线程名称前缀
+	 * @return {@link ThreadFactory}
+	 * @see ThreadFactoryBuilder#build()
+	 * @since 5.8.0
+	 */
+	public static ThreadFactory createThreadFactory(String threadNamePrefix) {
+		return ThreadFactoryBuilder.create().setNamePrefix(threadNamePrefix).build();
 	}
 
 	/**
@@ -537,7 +629,79 @@ public class ThreadUtil {
 	 * @return {@link ConcurrencyTester}
 	 * @since 4.5.8
 	 */
+	@SuppressWarnings("resource")
 	public static ConcurrencyTester concurrencyTest(int threadSize, Runnable runnable) {
 		return (new ConcurrencyTester(threadSize)).test(runnable);
+	}
+
+	/**
+	 * 创建{@link ScheduledThreadPoolExecutor}
+	 *
+	 * @param corePoolSize 初始线程池大小
+	 * @return {@link ScheduledThreadPoolExecutor}
+	 * @since 5.5.8
+	 */
+	public static ScheduledThreadPoolExecutor createScheduledExecutor(int corePoolSize) {
+		return new ScheduledThreadPoolExecutor(corePoolSize);
+	}
+
+	/**
+	 * 开始执行一个定时任务，执行方式分fixedRate模式和fixedDelay模式。<br>
+	 * 注意：此方法的延迟和周期的单位均为毫秒。
+	 *
+	 * <ul>
+	 *     <li>fixedRate 模式：以固定的频率执行。每period的时刻检查，如果上个任务完成，启动下个任务，否则等待上个任务结束后立即启动。</li>
+	 *     <li>fixedDelay模式：以固定的延时执行。上次任务结束后等待period再执行下个任务。</li>
+	 * </ul>
+	 *
+	 * @param executor              定时任务线程池，{@code null}新建一个默认线程池
+	 * @param command               需要定时执行的逻辑
+	 * @param initialDelay          初始延迟，单位毫秒
+	 * @param period                执行周期，单位毫秒
+	 * @param fixedRateOrFixedDelay {@code true}表示fixedRate模式，{@code false}表示fixedDelay模式
+	 * @return {@link ScheduledThreadPoolExecutor}
+	 * @since 5.5.8
+	 */
+	public static ScheduledThreadPoolExecutor schedule(ScheduledThreadPoolExecutor executor,
+													   Runnable command,
+													   long initialDelay,
+													   long period,
+													   boolean fixedRateOrFixedDelay) {
+		return schedule(executor, command, initialDelay, period, TimeUnit.MILLISECONDS, fixedRateOrFixedDelay);
+	}
+
+	/**
+	 * 开始执行一个定时任务，执行方式分fixedRate模式和fixedDelay模式。
+	 *
+	 * <ul>
+	 *     <li>fixedRate 模式：以固定的频率执行。每period的时刻检查，如果上个任务完成，启动下个任务，否则等待上个任务结束后立即启动。</li>
+	 *     <li>fixedDelay模式：以固定的延时执行。上次任务结束后等待period再执行下个任务。</li>
+	 * </ul>
+	 *
+	 * @param executor              定时任务线程池，{@code null}新建一个默认线程池
+	 * @param command               需要定时执行的逻辑
+	 * @param initialDelay          初始延迟
+	 * @param period                执行周期
+	 * @param timeUnit              时间单位
+	 * @param fixedRateOrFixedDelay {@code true}表示fixedRate模式，{@code false}表示fixedDelay模式
+	 * @return {@link ScheduledThreadPoolExecutor}
+	 * @since 5.6.5
+	 */
+	public static ScheduledThreadPoolExecutor schedule(ScheduledThreadPoolExecutor executor,
+													   Runnable command,
+													   long initialDelay,
+													   long period,
+													   TimeUnit timeUnit,
+													   boolean fixedRateOrFixedDelay) {
+		if (null == executor) {
+			executor = createScheduledExecutor(2);
+		}
+		if (fixedRateOrFixedDelay) {
+			executor.scheduleAtFixedRate(command, initialDelay, period, timeUnit);
+		} else {
+			executor.scheduleWithFixedDelay(command, initialDelay, period, timeUnit);
+		}
+
+		return executor;
 	}
 }

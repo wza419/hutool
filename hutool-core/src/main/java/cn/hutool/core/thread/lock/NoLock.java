@@ -6,11 +6,13 @@ import java.util.concurrent.locks.Lock;
 
 /**
  * 无锁实现
- * 
+ *
  * @author looly
  *@since 4.3.1
  */
 public class NoLock implements Lock{
+
+	public static NoLock INSTANCE = new NoLock();
 
 	@Override
 	public void lock() {

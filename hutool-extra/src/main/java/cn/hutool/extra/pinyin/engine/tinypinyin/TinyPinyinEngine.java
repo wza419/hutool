@@ -1,5 +1,6 @@
 package cn.hutool.extra.pinyin.engine.tinypinyin;
 
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.extra.pinyin.PinyinEngine;
 import com.github.promeg.pinyinhelper.Pinyin;
 
@@ -30,6 +31,7 @@ public class TinyPinyinEngine implements PinyinEngine {
 	 * 构造
 	 */
 	public TinyPinyinEngine(){
+		this(null);
 	}
 
 	/**
@@ -50,7 +52,8 @@ public class TinyPinyinEngine implements PinyinEngine {
 
 	@Override
 	public String getPinyin(String str, String separator) {
-		return Pinyin.toPinyin(str, separator).toLowerCase();
+		final String pinyin = Pinyin.toPinyin(str, separator);
+		return StrUtil.isEmpty(pinyin) ? pinyin : pinyin.toLowerCase();
 	}
 
 }

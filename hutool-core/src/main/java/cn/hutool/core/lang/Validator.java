@@ -14,7 +14,14 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * 字段验证器
+ * 字段验证器（验证器），分两种类型的验证：
+ *
+ * <ul>
+ *     <li>isXXX：通过返回boolean值判断是否满足给定格式。</li>
+ *     <li>validateXXX：通过抛出异常{@link ValidateException}检查是否满足给定格式。</li>
+ * </ul>
+ * <p>
+ * 主要验证字段非空、是否为满足指定格式等（如是否为Email、电话等）
  *
  * @author Looly
  */
@@ -48,6 +55,12 @@ public class Validator {
 	 * 邮件
 	 */
 	public final static Pattern EMAIL = PatternPool.EMAIL;
+
+	/**
+	 * 邮件（包含中文）
+	 */
+	public final static Pattern EMAIL_WITH_CHINESE = PatternPool.EMAIL_WITH_CHINESE;
+
 	/**
 	 * 移动电话
 	 */
@@ -90,9 +103,17 @@ public class Validator {
 	 * 中国车牌号码
 	 */
 	public final static Pattern PLATE_NUMBER = PatternPool.PLATE_NUMBER;
+	/**
+	 * 车架号;别名：车辆识别代号 车辆识别码；十七位码
+	 */
+	public final static Pattern CAR_VIN = PatternPool.CAR_VIN;
+	/**
+	 * 驾驶证  别名：驾驶证档案编号、行驶证编号；12位数字字符串；仅限：中国驾驶证档案编号
+	 */
+	public final static Pattern CAR_DRIVING_LICENCE = PatternPool.CAR_DRIVING_LICENCE;
 
 	/**
-	 * 给定值是否为<code>true</code>
+	 * 给定值是否为{@code true}
 	 *
 	 * @param value 值
 	 * @return 是否为<code>true</code>
@@ -103,7 +124,7 @@ public class Validator {
 	}
 
 	/**
-	 * 给定值是否不为<code>false</code>
+	 * 给定值是否不为{@code false}
 	 *
 	 * @param value 值
 	 * @return 是否不为<code>false</code>
@@ -114,7 +135,7 @@ public class Validator {
 	}
 
 	/**
-	 * 检查指定值是否为<code>true</code>
+	 * 检查指定值是否为{@code true}
 	 *
 	 * @param value            值
 	 * @param errorMsgTemplate 错误消息内容模板（变量使用{}表示）
@@ -131,7 +152,7 @@ public class Validator {
 	}
 
 	/**
-	 * 检查指定值是否为<code>false</code>
+	 * 检查指定值是否为{@code false}
 	 *
 	 * @param value            值
 	 * @param errorMsgTemplate 错误消息内容模板（变量使用{}表示）
@@ -148,7 +169,7 @@ public class Validator {
 	}
 
 	/**
-	 * 给定值是否为<code>null</code>
+	 * 给定值是否为{@code null}
 	 *
 	 * @param value 值
 	 * @return 是否为<code>null</code>
@@ -158,7 +179,7 @@ public class Validator {
 	}
 
 	/**
-	 * 给定值是否不为<code>null</code>
+	 * 给定值是否不为{@code null}
 	 *
 	 * @param value 值
 	 * @return 是否不为<code>null</code>
@@ -168,7 +189,7 @@ public class Validator {
 	}
 
 	/**
-	 * 检查指定值是否为<code>null</code>
+	 * 检查指定值是否为{@code null}
 	 *
 	 * @param <T>              被检查的对象类型
 	 * @param value            值
@@ -186,7 +207,7 @@ public class Validator {
 	}
 
 	/**
-	 * 检查指定值是否非<code>null</code>
+	 * 检查指定值是否非{@code null}
 	 *
 	 * @param <T>              被检查的对象类型
 	 * @param value            值
@@ -346,32 +367,6 @@ public class Validator {
 			throw new ValidateException(errorMsg);
 		}
 		return value;
-	}
-
-	/**
-	 * 通过正则表达式验证
-	 *
-	 * @param pattern 正则模式
-	 * @param value   值
-	 * @return 是否匹配正则
-	 * @deprecated 请使用 {@link #isMatchRegex(Pattern, CharSequence)}
-	 */
-	@Deprecated
-	public static boolean isMactchRegex(Pattern pattern, CharSequence value) {
-		return ReUtil.isMatch(pattern, value);
-	}
-
-	/**
-	 * 通过正则表达式验证
-	 *
-	 * @param regex 正则
-	 * @param value 值
-	 * @return 是否匹配正则
-	 * @deprecated 拼写错误，请使用{@link #isMatchRegex(String, CharSequence)}
-	 */
-	@Deprecated
-	public static boolean isMactchRegex(String regex, CharSequence value) {
-		return ReUtil.isMatch(regex, value);
 	}
 
 	/**
@@ -579,6 +574,17 @@ public class Validator {
 	}
 
 	/**
+	 * 是否包含数字
+	 *
+	 * @param value 当前字符串
+	 * @return boolean 是否存在数字
+	 * @since 5.6.5
+	 */
+	public static boolean hasNumber(CharSequence value) {
+		return ReUtil.contains(PatternPool.NUMBERS, value);
+	}
+
+	/**
 	 * 验证是否为数字
 	 *
 	 * @param value    表单值
@@ -683,6 +689,21 @@ public class Validator {
 	public static boolean isEmail(CharSequence value) {
 		return isMatchRegex(EMAIL, value);
 	}
+
+	/**
+	 * 验证是否为可用邮箱地址（兼容中文邮箱地址）
+	 *
+	 * @param value 值
+	 * @param includChinese 包含中文标识
+	 * @return true为可用邮箱地址
+	 */
+	public static boolean isEmail(CharSequence value,boolean includChinese) {
+		if (includChinese){
+			return isMatchRegex(EMAIL_WITH_CHINESE, value);
+		}
+		return isEmail(value);
+	}
+
 
 	/**
 	 * 验证是否为可用邮箱地址
@@ -943,6 +964,9 @@ public class Validator {
 	 * @return 是否为URL
 	 */
 	public static boolean isUrl(CharSequence value) {
+		if (StrUtil.isBlank(value)) {
+			return false;
+		}
 		try {
 			new java.net.URL(StrUtil.str(value));
 		} catch (MalformedURLException e) {
@@ -1135,5 +1159,121 @@ public class Validator {
 	 */
 	public static boolean isCreditCode(CharSequence creditCode) {
 		return CreditCodeUtil.isCreditCode(creditCode);
+	}
+
+	/**
+	 * 验证是否为车架号；别名：行驶证编号 车辆识别代号 车辆识别码
+	 *
+	 * @param value 值，17位车架号；形如：LSJA24U62JG269225、LDC613P23A1305189
+	 * @return 是否为车架号
+	 * @author dazer and ourslook
+	 * @since 5.6.3
+	 */
+	public static boolean isCarVin(CharSequence value) {
+		return isMatchRegex(CAR_VIN, value);
+	}
+
+	/**
+	 * 验证是否为车架号；别名：行驶证编号 车辆识别代号 车辆识别码
+	 *
+	 * @param <T>      字符串类型
+	 * @param value    值
+	 * @param errorMsg 验证错误的信息
+	 * @return 验证后的值
+	 * @throws ValidateException 验证异常
+	 * @author dazer and ourslook
+	 * @since 5.6.3
+	 */
+	public static <T extends CharSequence> T validateCarVin(T value, String errorMsg) throws ValidateException {
+		if (false == isCarVin(value)) {
+			throw new ValidateException(errorMsg);
+		}
+		return value;
+	}
+
+	/**
+	 * 验证是否为驾驶证  别名：驾驶证档案编号、行驶证编号
+	 * 仅限：中国驾驶证档案编号
+	 *
+	 * @param value 值，12位数字字符串,eg:430101758218
+	 * @return 是否为档案编号
+	 * @author dazer and ourslook
+	 * @since 5.6.3
+	 */
+	public static boolean isCarDrivingLicence(CharSequence value) {
+		return isMatchRegex(CAR_DRIVING_LICENCE, value);
+	}
+
+
+	/**
+	 * 是否是中文姓名
+	 * 维吾尔族姓名里面的点是 · 输入法中文状态下，键盘左上角数字1前面的那个符号；<br>
+	 * 错误字符：{@code ．.。．.}<br>
+	 * 正确维吾尔族姓名：
+	 * <pre>
+	 * 霍加阿卜杜拉·麦提喀斯木
+	 * 玛合萨提别克·哈斯木别克
+	 * 阿布都热依木江·艾斯卡尔
+	 * 阿卜杜尼亚孜·毛力尼亚孜
+	 * </pre>
+	 * <pre>
+	 * ----------
+	 * 错误示例：孟  伟                reason: 有空格
+	 * 错误示例：连逍遥0               reason: 数字
+	 * 错误示例：依帕古丽-艾则孜        reason: 特殊符号
+	 * 错误示例：牙力空.买提萨力        reason: 新疆人的点不对
+	 * 错误示例：王建鹏2002-3-2        reason: 有数字、特殊符号
+	 * 错误示例：雷金默(雷皓添）        reason: 有括号
+	 * 错误示例：翟冬:亮               reason: 有特殊符号
+	 * 错误示例：李                   reason: 少于2位
+	 * ----------
+	 * </pre>
+	 * 总结中文姓名：2-60位，只能是中文和 ·
+	 *
+	 * @param value 中文姓名
+	 * @return 是否是正确的中文姓名
+	 * @author dazer
+	 * @since 5.8.0.M3
+	 */
+	public static boolean isChineseName(CharSequence value) {
+		return isMatchRegex(PatternPool.CHINESE_NAME, value);
+	}
+
+
+	/**
+	 * 验证是否为驾驶证  别名：驾驶证档案编号、行驶证编号
+	 *
+	 * @param <T>      字符串类型
+	 * @param value    值
+	 * @param errorMsg 验证错误的信息
+	 * @return 验证后的值
+	 * @throws ValidateException 验证异常
+	 * @author dazer and ourslook
+	 * @since 5.6.3
+	 */
+	public static <T extends CharSequence> T validateCarDrivingLicence(T value, String errorMsg) throws ValidateException {
+		if (false == isCarDrivingLicence(value)) {
+			throw new ValidateException(errorMsg);
+		}
+		return value;
+	}
+
+	/**
+	 * 检查给定的index是否超出长度限制，默认检查超出倍数（10倍），此方法主要用于内部，检查包括：
+	 * <ul>
+	 *     <li>数组调用setOrPadding时，最多允许padding的长度</li>
+	 *     <li>List调用setOrPadding时，最多允许padding的长度</li>
+	 *     <li>JSONArray调用setOrPadding时，最多允许padding的长度</li>
+	 * </ul>
+	 *
+	 * @param index 索引
+	 * @param size  数组、列表长度
+	 * @since 5.8.22
+	 */
+	public static void checkIndexLimit(final int index, final int size) {
+		// issue#3286, 增加安全检查，最多增加10倍
+		if (index > (size + 1) * 10) {
+			throw new ValidateException("Index [{}] is too large for size: [{}]", index, size);
+		}
 	}
 }

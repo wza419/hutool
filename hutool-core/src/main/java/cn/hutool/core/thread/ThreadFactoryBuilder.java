@@ -11,28 +11,38 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * ThreadFactory创建器<br>
  * 参考：Guava的ThreadFactoryBuilder
- * 
+ *
  * @author looly
  * @since 4.1.9
  */
-public class ThreadFactoryBuilder implements Builder<ThreadFactory>{
+public class ThreadFactoryBuilder implements Builder<ThreadFactory> {
 	private static final long serialVersionUID = 1L;
 
-	/** 用于线程创建的线程工厂类 */
+	/**
+	 * 用于线程创建的线程工厂类
+	 */
 	private ThreadFactory backingThreadFactory;
-	/** 线程名的前缀 */
+	/**
+	 * 线程名的前缀
+	 */
 	private String namePrefix;
-	/** 是否守护线程，默认false */
+	/**
+	 * 是否守护线程，默认false
+	 */
 	private Boolean daemon;
-	/** 线程优先级 */
+	/**
+	 * 线程优先级
+	 */
 	private Integer priority;
-	/** 未捕获异常处理器 */
+	/**
+	 * 未捕获异常处理器
+	 */
 	private UncaughtExceptionHandler uncaughtExceptionHandler;
 
 	/**
-	 * 创建{@link ThreadFactoryBuilder}
-	 * 
-	 * @return {@link ThreadFactoryBuilder}
+	 * 创建{@code ThreadFactoryBuilder}
+	 *
+	 * @return {@code ThreadFactoryBuilder}
 	 */
 	public static ThreadFactoryBuilder create() {
 		return new ThreadFactoryBuilder();
@@ -51,7 +61,7 @@ public class ThreadFactoryBuilder implements Builder<ThreadFactory>{
 
 	/**
 	 * 设置线程名前缀，例如设置前缀为hutool-thread-，则线程名为hutool-thread-1之类。
-	 * 
+	 *
 	 * @param namePrefix 线程名前缀
 	 * @return this
 	 */
@@ -62,7 +72,7 @@ public class ThreadFactoryBuilder implements Builder<ThreadFactory>{
 
 	/**
 	 * 设置是否守护线程
-	 * 
+	 *
 	 * @param daemon 是否守护线程
 	 * @return this
 	 */
@@ -73,7 +83,7 @@ public class ThreadFactoryBuilder implements Builder<ThreadFactory>{
 
 	/**
 	 * 设置线程优先级
-	 * 
+	 *
 	 * @param priority 优先级
 	 * @return this
 	 * @see Thread#MIN_PRIORITY
@@ -93,7 +103,7 @@ public class ThreadFactoryBuilder implements Builder<ThreadFactory>{
 
 	/**
 	 * 设置未捕获异常的处理方式
-	 * 
+	 *
 	 * @param uncaughtExceptionHandler {@link UncaughtExceptionHandler}
 	 * @return this
 	 */
@@ -104,7 +114,7 @@ public class ThreadFactoryBuilder implements Builder<ThreadFactory>{
 
 	/**
 	 * 构建{@link ThreadFactory}
-	 * 
+	 *
 	 * @return {@link ThreadFactory}
 	 */
 	@Override
@@ -114,8 +124,8 @@ public class ThreadFactoryBuilder implements Builder<ThreadFactory>{
 
 	/**
 	 * 构建
-	 * 
-	 * @param builder {@link ThreadFactoryBuilder}
+	 *
+	 * @param builder {@code ThreadFactoryBuilder}
 	 * @return {@link ThreadFactory}
 	 */
 	private static ThreadFactory build(ThreadFactoryBuilder builder) {

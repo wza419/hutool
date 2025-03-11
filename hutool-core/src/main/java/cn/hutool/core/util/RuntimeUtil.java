@@ -1,7 +1,10 @@
 package cn.hutool.core.util;
 
+import cn.hutool.core.exceptions.UtilException;
 import cn.hutool.core.io.IORuntimeException;
 import cn.hutool.core.io.IoUtil;
+import cn.hutool.core.lang.Pid;
+import cn.hutool.core.text.StrBuilder;
 
 import java.io.File;
 import java.io.IOException;
@@ -9,6 +12,8 @@ import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Stack;
+import java.util.concurrent.ThreadPoolExecutor;
 
 /**
  * 系统运行时工具类，用于执行系统命令的工具
@@ -30,7 +35,7 @@ public class RuntimeUtil {
 	}
 
 	/**
-	 * 执行系统命令，使用系统默认编码
+	 * 执行系统命令，使用传入的 {@link Charset charset} 编码
 	 *
 	 * @param charset 编码
 	 * @param cmds    命令列表，每个元素代表一条命令
@@ -54,7 +59,7 @@ public class RuntimeUtil {
 	}
 
 	/**
-	 * 执行系统命令，使用系统默认编码
+	 * 执行系统命令，使用传入的 {@link Charset charset} 编码
 	 *
 	 * @param charset 编码
 	 * @param cmds    命令列表，每个元素代表一条命令
@@ -74,22 +79,9 @@ public class RuntimeUtil {
 	 * @return {@link Process}
 	 */
 	public static Process exec(String... cmds) {
-		if (ArrayUtil.isEmpty(cmds)) {
-			throw new NullPointerException("Command is empty !");
-		}
-
-		// 单条命令的情况
-		if (1 == cmds.length) {
-			final String cmd = cmds[0];
-			if (StrUtil.isBlank(cmd)) {
-				throw new NullPointerException("Command is empty !");
-			}
-			cmds = StrUtil.splitToArray(cmd, StrUtil.C_SPACE);
-		}
-
 		Process process;
 		try {
-			process = new ProcessBuilder(cmds).redirectErrorStream(true).start();
+			process = new ProcessBuilder(handleCmds(cmds)).redirectErrorStream(true).start();
 		} catch (IOException e) {
 			throw new IORuntimeException(e);
 		}
@@ -120,20 +112,8 @@ public class RuntimeUtil {
 	 * @since 4.1.6
 	 */
 	public static Process exec(String[] envp, File dir, String... cmds) {
-		if (ArrayUtil.isEmpty(cmds)) {
-			throw new NullPointerException("Command is empty !");
-		}
-
-		// 单条命令的情况
-		if (1 == cmds.length) {
-			final String cmd = cmds[0];
-			if (StrUtil.isBlank(cmd)) {
-				throw new NullPointerException("Command is empty !");
-			}
-			cmds = StrUtil.splitToArray(cmd, StrUtil.C_SPACE);
-		}
 		try {
-			return Runtime.getRuntime().exec(cmds, envp, dir);
+			return Runtime.getRuntime().exec(handleCmds(cmds), envp, dir);
 		} catch (IOException e) {
 			throw new IORuntimeException(e);
 		}
@@ -152,7 +132,7 @@ public class RuntimeUtil {
 	}
 
 	/**
-	 * 获取命令执行结果，使用系统默认编码，获取后销毁进程
+	 * 获取命令执行结果，使用传入的 {@link Charset charset} 编码，获取后销毁进程
 	 *
 	 * @param process {@link Process} 进程
 	 * @param charset 编码
@@ -171,7 +151,7 @@ public class RuntimeUtil {
 	}
 
 	/**
-	 * 获取命令执行结果，使用系统默认编码，，获取后销毁进程
+	 * 获取命令执行结果，使用系统默认编码，获取后销毁进程
 	 *
 	 * @param process {@link Process} 进程
 	 * @return 命令执行结果列表
@@ -201,7 +181,7 @@ public class RuntimeUtil {
 	}
 
 	/**
-	 * 获取命令执行异常结果，使用系统默认编码，，获取后销毁进程
+	 * 获取命令执行异常结果，使用系统默认编码，获取后销毁进程
 	 *
 	 * @param process {@link Process} 进程
 	 * @return 命令执行结果列表
@@ -255,11 +235,21 @@ public class RuntimeUtil {
 	/**
 	 * 获得JVM可用的处理器数量（一般为CPU核心数）
 	 *
+	 * <p>
+	 *     这里做一个特殊的处理,在特殊的CPU上面，会有获取不到CPU数量的情况，所以这里做一个保护;
+	 *     默认给一个7，真实的CPU基本都是偶数，方便区分。
+	 *     如果不做处理，会出现创建线程池时{@link ThreadPoolExecutor}，抛出异常：{@link IllegalArgumentException}
+	 * </p>
+	 *
 	 * @return 可用的处理器数量
 	 * @since 5.3.0
 	 */
 	public static int getProcessorCount() {
-		return Runtime.getRuntime().availableProcessors();
+		int cpu = Runtime.getRuntime().availableProcessors();
+		if (cpu <= 0) {
+			cpu = 7;
+		}
+		return cpu;
 	}
 
 	/**
@@ -298,7 +288,95 @@ public class RuntimeUtil {
 	 *
 	 * @return 最大可用内存
 	 */
-	public final long getUsableMemory() {
+	public static long getUsableMemory() {
 		return getMaxMemory() - getTotalMemory() + getFreeMemory();
+	}
+
+	/**
+	 * 获取当前进程ID，首先获取进程名称，读取@前的ID值，如果不存在，则读取进程名的hash值
+	 *
+	 * @return 进程ID
+	 * @throws UtilException 进程名称为空
+	 * @since 5.7.3
+	 */
+	public static int getPid() throws UtilException {
+		return Pid.INSTANCE.get();
+	}
+
+	/**
+	 * 处理命令，多行命令原样返回，单行命令拆分处理
+	 *
+	 * @param cmds 命令
+	 * @return 处理后的命令
+	 */
+	private static String[] handleCmds(String... cmds) {
+		if (ArrayUtil.isEmpty(cmds)) {
+			throw new NullPointerException("Command is empty !");
+		}
+
+		// 单条命令的情况
+		if (1 == cmds.length) {
+			final String cmd = cmds[0];
+			if (StrUtil.isBlank(cmd)) {
+				throw new NullPointerException("Command is blank !");
+			}
+			cmds = cmdSplit(cmd);
+		}
+		return cmds;
+	}
+
+	/**
+	 * 命令分割，使用空格分割，考虑双引号和单引号的情况
+	 *
+	 * @param cmd 命令，如 git commit -m 'test commit'
+	 * @return 分割后的命令
+	 */
+	private static String[] cmdSplit(String cmd) {
+		final List<String> cmds = new ArrayList<>();
+
+		final int length = cmd.length();
+		final Stack<Character> stack = new Stack<>();
+		boolean inWrap = false;
+		final StrBuilder cache = StrUtil.strBuilder();
+
+		char c;
+		for (int i = 0; i < length; i++) {
+			c = cmd.charAt(i);
+			switch (c) {
+				case CharUtil.SINGLE_QUOTE:
+				case CharUtil.DOUBLE_QUOTES:
+					if (inWrap) {
+						if (c == stack.peek()) {
+							//结束包装
+							stack.pop();
+							inWrap = false;
+						}
+						cache.append(c);
+					} else {
+						stack.push(c);
+						cache.append(c);
+						inWrap = true;
+					}
+					break;
+				case CharUtil.SPACE:
+					if (inWrap) {
+						// 处于包装内
+						cache.append(c);
+					} else {
+						cmds.add(cache.toString());
+						cache.reset();
+					}
+					break;
+				default:
+					cache.append(c);
+					break;
+			}
+		}
+
+		if (cache.hasContent()) {
+			cmds.add(cache.toString());
+		}
+
+		return cmds.toArray(new String[0]);
 	}
 }

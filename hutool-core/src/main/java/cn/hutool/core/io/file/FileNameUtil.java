@@ -16,6 +16,19 @@ import java.util.regex.Pattern;
 public class FileNameUtil {
 
 	/**
+	 * .java文件扩展名
+	 */
+	public static final String EXT_JAVA = ".java";
+	/**
+	 * .class文件扩展名
+	 */
+	public static final String EXT_CLASS = ".class";
+	/**
+	 * .jar文件扩展名
+	 */
+	public static final String EXT_JAR = ".jar";
+
+	/**
 	 * 类Unix路径分隔符
 	 */
 	public static final char UNIX_SEPARATOR = CharUtil.SLASH;
@@ -27,7 +40,12 @@ public class FileNameUtil {
 	/**
 	 * Windows下文件名中的无效字符
 	 */
-	private static final Pattern FILE_NAME_INVALID_PATTERN_WIN = Pattern.compile("[\\\\/:*?\"<>|]");
+	private static final Pattern FILE_NAME_INVALID_PATTERN_WIN = Pattern.compile("[\\\\/:*?\"<>|\r\n]");
+
+	/**
+	 * 特殊后缀
+	 */
+	private static final CharSequence[] SPECIAL_SUFFIX = {"tar.bz2", "tar.Z", "tar.gz", "tar.xz"};
 
 
 	// -------------------------------------------------------------------------------------------- name start
@@ -44,7 +62,11 @@ public class FileNameUtil {
 	}
 
 	/**
-	 * 返回文件名
+	 * 返回文件名<br>
+	 * <pre>
+	 * "d:/test/aaa" 返回 "aaa"
+	 * "/test/aaa.jpg" 返回 "aaa.jpg"
+	 * </pre>
 	 *
 	 * @param filePath 文件
 	 * @return 文件名
@@ -152,6 +174,14 @@ public class FileNameUtil {
 		if (0 == len) {
 			return fileName;
 		}
+
+		//issue#2642，多级扩展名的主文件名
+		for (final CharSequence specialSuffix : SPECIAL_SUFFIX) {
+			if(StrUtil.endWith(fileName, "." + specialSuffix)){
+				return StrUtil.subPre(fileName, len - specialSuffix.length() - 1);
+			}
+		}
+
 		if (CharUtil.isFileSeparator(fileName.charAt(len - 1))) {
 			len--;
 		}
@@ -201,11 +231,18 @@ public class FileNameUtil {
 		if (fileName == null) {
 			return null;
 		}
-		int index = fileName.lastIndexOf(StrUtil.DOT);
+		final int index = fileName.lastIndexOf(StrUtil.DOT);
 		if (index == -1) {
 			return StrUtil.EMPTY;
 		} else {
-			String ext = fileName.substring(index + 1);
+			// issue#I4W5FS@Gitee
+			final int secondToLastIndex = fileName.substring(0, index).lastIndexOf(StrUtil.DOT);
+			final String substr = fileName.substring(secondToLastIndex == -1 ? index : secondToLastIndex + 1);
+			if (StrUtil.containsAny(substr, SPECIAL_SUFFIX)) {
+				return substr;
+			}
+
+			final String ext = fileName.substring(index + 1);
 			// 扩展名中不能包含路径相关的符号
 			return StrUtil.containsAny(ext, UNIX_SEPARATOR, WINDOWS_SEPARATOR) ? StrUtil.EMPTY : ext;
 		}
@@ -231,6 +268,18 @@ public class FileNameUtil {
 	 */
 	public static boolean containsInvalid(String fileName) {
 		return (false == StrUtil.isBlank(fileName)) && ReUtil.contains(FILE_NAME_INVALID_PATTERN_WIN, fileName);
+	}
+
+	/**
+	 * 根据文件名检查文件类型，忽略大小写
+	 *
+	 * @param fileName 文件名，例如hutool.png
+	 * @param extNames 被检查的扩展名数组，同一文件类型可能有多种扩展名，扩展名不带“.”
+	 * @return 是否是指定扩展名的类型
+	 * @since 5.5.2
+	 */
+	public static boolean isType(String fileName, String... extNames) {
+		return StrUtil.equalsAnyIgnoreCase(extName(fileName), extNames);
 	}
 	// -------------------------------------------------------------------------------------------- name end
 }

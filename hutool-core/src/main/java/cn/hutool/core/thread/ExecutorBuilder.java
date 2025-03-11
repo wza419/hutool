@@ -200,7 +200,7 @@ public class ExecutorBuilder implements Builder<ThreadPoolExecutor> {
 	/**
 	 * 创建ExecutorBuilder，开始构建
 	 *
-	 * @return {@link ExecutorBuilder}
+	 * @return this
 	 */
 	public static ExecutorBuilder create() {
 		return new ExecutorBuilder();
@@ -227,7 +227,7 @@ public class ExecutorBuilder implements Builder<ThreadPoolExecutor> {
 	/**
 	 * 构建ThreadPoolExecutor
 	 *
-	 * @param builder {@link ExecutorBuilder}
+	 * @param builder this
 	 * @return {@link ThreadPoolExecutor}
 	 */
 	private static ThreadPoolExecutor build(ExecutorBuilder builder) {
@@ -242,7 +242,7 @@ public class ExecutorBuilder implements Builder<ThreadPoolExecutor> {
 			workQueue = (corePoolSize <= 0) ? new SynchronousQueue<>() : new LinkedBlockingQueue<>(DEFAULT_QUEUE_CAPACITY);
 		}
 		final ThreadFactory threadFactory = (null != builder.threadFactory) ? builder.threadFactory : Executors.defaultThreadFactory();
-		RejectedExecutionHandler handler = ObjectUtil.defaultIfNull(builder.handler, new ThreadPoolExecutor.AbortPolicy());
+		RejectedExecutionHandler handler = ObjectUtil.defaultIfNull(builder.handler, RejectPolicy.ABORT.getValue());
 
 		final ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(//
 				corePoolSize, //

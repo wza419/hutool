@@ -10,10 +10,11 @@ import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
 import java.io.BufferedInputStream;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 
 /**
@@ -38,7 +39,6 @@ import java.util.ArrayList;
  * 来自：https://github.com/rtyley/animated-gif-lib-for-java
  *
  * @author Kevin Weiner, FM Software; LZW decoder adapted from John Cristy's ImageMagick.
- * @version 1.03 November 2003
  */
 public class GifDecoder {
 
@@ -95,7 +95,7 @@ public class GifDecoder {
 	protected int delay = 0; // delay in milliseconds
 	protected int transIndex; // transparent color index
 
-	protected static final int MaxStackSize = 4096;
+	protected static final int MAX_STACK_SIZE = 4096;
 	// max decoder pixel stack size
 
 	// LZW decoder working arrays
@@ -340,7 +340,7 @@ public class GifDecoder {
 				URL url = new URL(name);
 				in = new BufferedInputStream(url.openStream());
 			} else {
-				in = new BufferedInputStream(new FileInputStream(name));
+				in = new BufferedInputStream(Files.newInputStream(Paths.get(name)));
 			}
 			status = read(in);
 		} catch (IOException e) {
@@ -378,9 +378,9 @@ public class GifDecoder {
 		if ((pixels == null) || (pixels.length < npix)) {
 			pixels = new byte[npix]; // allocate new pixel array
 		}
-		if (prefix == null) prefix = new short[MaxStackSize];
-		if (suffix == null) suffix = new byte[MaxStackSize];
-		if (pixelStack == null) pixelStack = new byte[MaxStackSize + 1];
+		if (prefix == null) prefix = new short[MAX_STACK_SIZE];
+		if (suffix == null) suffix = new byte[MAX_STACK_SIZE];
+		if (pixelStack == null) pixelStack = new byte[MAX_STACK_SIZE + 1];
 
 		//  Initialize GIF data stream decoder.
 
@@ -455,7 +455,7 @@ public class GifDecoder {
 
 				//  Add a new string to the string table,
 
-				if (available >= MaxStackSize) {
+				if (available >= MAX_STACK_SIZE) {
 					pixelStack[top++] = (byte) first;
 					continue;
 				}
@@ -464,7 +464,7 @@ public class GifDecoder {
 				suffix[available] = (byte) first;
 				available++;
 				if (((available & code_mask) == 0)
-						&& (available < MaxStackSize)) {
+						&& (available < MAX_STACK_SIZE)) {
 					code_size++;
 					code_mask += available;
 				}
@@ -606,10 +606,11 @@ public class GifDecoder {
 							for (int i = 0; i < 11; i++) {
 								app.append((char) block[i]);
 							}
-							if (app.toString().equals("NETSCAPE2.0")) {
+							if ("NETSCAPE2.0".contentEquals(app)) {
 								readNetscapeExt();
-							} else
+							} else {
 								skip(); // don't care
+							}
 							break;
 
 						default: // uninteresting extension
@@ -777,9 +778,6 @@ public class GifDecoder {
 		lastRect = new Rectangle(ix, iy, iw, ih);
 		lastImage = image;
 		lastBgColor = bgColor;
-		int dispose = 0;
-		boolean transparency = false;
-		int delay = 0;
 		lct = null;
 	}
 
